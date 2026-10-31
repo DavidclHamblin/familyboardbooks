@@ -6,7 +6,9 @@
   function $(s, r) { return (r || document).querySelector(s); }
   function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
   var esc = F.esc;
-  var STEPS = ["Book", "Style", "Pages", "Cover and reserve"];
+  var STEPS = ["Book", "Style", "Pages", "Cover", "Reserve"];
+  var LAST = STEPS.length - 1;
+  var COVER_COLOURS = ["red", "orange", "sun", "leaf", "sky", "grape", "pink", "ink"];
   var EXAMPLES = {
     letters: { A: ["Amara", "Auntie Rose"], B: ["Baby Leo"], C: ["Cousins"], D: ["Daddy"], G: ["Grandpa Joe", "Granny Mae"], H: ["Home"], M: ["Mummy"], U: ["Uncle Tom"] },
     numbers: ["Daddy", "Grannies", "Cousins", "Wheels on our car", "Ducks at the park", "Teddies", "Days in the week", "Candles on the cake", "Toes", "Fingers"],
@@ -52,12 +54,14 @@
   var state = {
     step: 0, book: F.books[q.book] ? q.book : "abc", edition: q.edition || "", style: "splash",
     language: "English", language2: "Español", bilingual: false, giftbox: false, copies: 0,
-    current: 0, child: "Amara", dedication: "For Amara, with love from all of us.", pages: null, done: false
+    current: 0, child: "Amara", dedication: "For Amara, with love from all of us.", pages: null, done: false,
+    cover: { color: "", frontPhoto: "", backMode: "photo", backPhoto: "", backMessage: "Made with love for Amara" }
   };
   function storeKey() { return "fbb-draft-" + state.book; }
   function save() {
     try {
       var slim = JSON.parse(JSON.stringify(state)); (slim.pages || []).forEach(function (p) { p.items.forEach(function (it) { it.photo = ""; }); });
+      slim.cover.frontPhoto = ""; slim.cover.backPhoto = "";
       localStorage.setItem(storeKey(), JSON.stringify(slim));
     } catch (e) { /* storage unavailable: the draft just won't be remembered */ }
   }
@@ -164,18 +168,63 @@
       '<div class="pages-ui"><div class="page-strip" role="group" aria-label="Pages">' + strip + "</div>" +
       '<div class="editor"><div class="editor-head"><h3>' + esc(p.editable ? "Page " + p.key : "Page " + p.heading) + '</h3><span class="hint">' + esc(p.prompt) + "</span></div>" + head + slots + nav + "</div>" +
       '<div id="live">' + F.bookPage(previewModel(p)) + '<p class="hint" style="margin-top:12px">Preview. Your photos are turned into ' + esc(styleName()) + " cartoons when we make your book.</p></div></div>" +
-      navButtons(true, "Next: cover and reserve") + "</section>";
+      navButtons(true, "Next: design the cover") + "</section>";
+  }
+
+  function coverColour() { return state.cover.color || F.books[state.book].color; }
+
+  /* coverHTML("front" | "back") -> a board book cover, front or back */
+  function coverHTML(side) {
+    var col = coverColour(), cv = state.cover, accent = col === "sun" ? "red" : "sun";
+    var cls = "bcover " + side + (col === "sun" ? " light" : "");
+    if (side === "front") {
+      var art = cv.frontPhoto ? F.photoPortrait(cv.frontPhoto, state.style, accent, "front") : F.portrait("girl", state.style, accent, "cover");
+      return '<div class="' + cls + '" style="--cc:var(--' + col + ')"><span class="k">' + esc(F.books[state.book].name) + "</span>" + art + '<span class="t">' + esc(coverTitle()) + "</span></div>";
+    }
+    var body = cv.backMode === "photo"
+      ? (cv.backPhoto ? F.photoPortrait(cv.backPhoto, state.style, accent, "back") : F.portrait("granny", state.style, accent, "back"))
+      : '<span class="pattern" aria-hidden="true"></span>';
+    return '<div class="' + cls + (cv.backMode === "pattern" ? " patterned" : "") + '" style="--cc:var(--' + col + ')">' + body +
+      (cv.backMessage ? '<span class="msg">' + esc(cv.backMessage) + "</span>" : "") +
+      '<span class="brand"><span class="logo-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Family Board Books<small>familyboardbooks.com</small></span></div>';
+  }
+
+  function coverUpload(side, label) {
+    var has = state.cover[side + "Photo"];
+    return '<div class="slot-actions"><label class="upload">' + (has ? "Change photo" : label) + '<input type="file" accept="image/*" data-cover-photo="' + side + '" aria-label="' + esc(label) + '"></label>' +
+      (has ? '<button type="button" class="linkish" data-cover-clear="' + side + '">Use our illustration instead</button>' : "") + "</div>";
   }
 
   function panelCover() {
+    var cv = state.cover, col = coverColour();
+    var swatches = COVER_COLOURS.map(function (c) {
+      return '<button type="button" class="swatch" data-cover-color="' + c + '" style="--sw:var(--' + c + ')" aria-pressed="' + (c === col) + '" aria-label="' + c + ' cover"></button>';
+    }).join("");
+    return '<section class="panel"><h2>Design the cover</h2><p class="lede">Choose a colour and pictures for the front and back. Cover changes are free.</p>' +
+      '<div class="cover-ui"><div class="cover-pair" id="cover-pair"><figure>' + coverHTML("front") + "<figcaption>Front</figcaption></figure><figure>" + coverHTML("back") + "<figcaption>Back</figcaption></figure></div>" +
+      '<div class="cover-form">' +
+      '<div class="field"><label for="c-child">Child\'s name for the cover</label><input type="text" id="c-child" data-k="child" value="' + esc(state.child) + '"></div>' +
+      '<div class="field"><span class="flabel">Cover colour</span><div class="swatches" role="group" aria-label="Cover colour">' + swatches + "</div></div>" +
+      '<div class="field"><span class="flabel">Front picture</span><p class="hint">A family photo works well. We turn it into a cartoon like the other pages.</p>' + coverUpload("front", "Add front photo") + "</div>" +
+      '<div class="field"><span class="flabel">Back cover</span><div class="seg" role="group" aria-label="Back cover design"><button type="button" data-back-mode="photo" aria-pressed="' + (cv.backMode === "photo") + '">Photo and message</button><button type="button" data-back-mode="pattern" aria-pressed="' + (cv.backMode === "pattern") + '">Pattern and message</button></div>' +
+      (cv.backMode === "photo" ? coverUpload("back", "Add back photo") : "") + "</div>" +
+      '<div class="field"><label for="c-backmsg">Message on the back</label><input type="text" id="c-backmsg" data-cover-msg maxlength="80" value="' + esc(cv.backMessage) + '" placeholder="e.g. Made with love by Granny and Grandpa, Christmas 2026"></div>' +
+      '<div class="field"><label for="c-ded">Dedication page (inside the front cover)</label><textarea id="c-ded" data-k="dedication">' + esc(state.dedication) + "</textarea></div>" +
+      "</div></div>" + navButtons(true, "Next: reserve your book") + "</section>";
+  }
+
+  function refreshCover() {
+    var pair = $("#cover-pair");
+    if (pair) pair.innerHTML = "<figure>" + coverHTML("front") + "<figcaption>Front</figcaption></figure><figure>" + coverHTML("back") + "<figcaption>Back</figcaption></figure>";
+    renderSummary(); save();
+  }
+
+  function panelReserve() {
     if (state.done) {
       return '<section class="panel"><div class="success"><h2>Your book is reserved</h2><p>We\'ll email you to upload your photos securely and approve your cartoon proof when ordering opens. Founding families get ' + F.config.foundingDiscount + "% off.</p><p><a class=\"btn\" href=\"index.html\">Back to all books</a></p></div></section>";
     }
     var b = F.books[state.book];
-    return '<section class="panel"><h2>Cover and reserve</h2>' +
-      '<div class="row2"><div class="field"><label for="c-child">Child\'s name for the cover</label><input type="text" id="c-child" data-k="child" value="' + esc(state.child) + '"></div>' +
-      '<div class="field"><label for="c-title">Cover title</label><input type="text" id="c-title" value="' + esc(coverTitle()) + '" readonly></div></div>' +
-      '<div class="field"><label for="c-ded">Dedication page</label><textarea id="c-ded" data-k="dedication">' + esc(state.dedication) + "</textarea></div>" +
+    return '<section class="panel"><h2>Reserve your book</h2>' +
       '<p class="notice">Ordering opens soon. Reserve your book now: no payment is taken today, and you\'ll get ' + F.config.foundingDiscount + "% off as a founding family.</p>" +
       '<form class="form" id="reserve" novalidate><div class="row2"><div class="field"><label for="r-name">Your name</label><input type="text" id="r-name" name="name" autocomplete="name"></div>' +
       '<div class="field"><label for="r-email">Email</label><input type="email" id="r-email" name="email" autocomplete="email" placeholder="name@example.com" required></div></div>' +
@@ -195,8 +244,7 @@
 
   function renderSummary() {
     var b = F.books[state.book], pl = priceLines(), filled = filledCount(), total = state.pages.length;
-    var firstChar = "girl";
-    $("#summary").innerHTML = '<h3>Your book</h3><div class="sum-cover" style="--sc:var(--' + (b.color === "sun" ? "orange" : b.color) + ')"><span class="k">' + esc(styleName()) + " style</span>" + F.portrait(firstChar, state.style, "sun", "cover") + '<span class="t">' + esc(coverTitle()) + "</span></div>" +
+    $("#summary").innerHTML = '<h3>Your book</h3><div class="sum-pair">' + coverHTML("front") + coverHTML("back") + '</div><p class="hint">' + esc(styleName()) + " style &middot; " + esc(b.name) + "</p>" +
       '<div class="sum-lines">' + pl.lines.map(function (l) { return "<div><span>" + esc(l[0]) + "</span><span>" + cur + l[1] + "</span></div>"; }).join("") +
       '<div class="total"><span>Total</span><span>' + cur + pl.total + "</span></div></div>" +
       '<p class="hint">Founding families get ' + F.config.foundingDiscount + "% off. Shipping is added at checkout. " + esc(state.bilingual ? state.language + " and " + state.language2 : state.language) + ".</p>" +
@@ -205,7 +253,7 @@
 
   function render(focusSel) {
     renderStepper();
-    var fns = [panelBook, panelStyle, panelPages, panelCover];
+    var fns = [panelBook, panelStyle, panelPages, panelCover, panelReserve];
     $("#panels").innerHTML = fns[state.step]();
     renderSummary();
     if (focusSel) { var el = $(focusSel); if (el) el.focus(); }
@@ -224,7 +272,10 @@
   document.addEventListener("click", function (e) {
     var t = e.target.closest("button"); if (!t || !t.closest(".creator")) return;
     if (t.dataset.step != null) { state.step = Number(t.dataset.step); render(); scrollTop(); }
-    else if (t.dataset.nav) { state.step = Math.max(0, Math.min(3, state.step + Number(t.dataset.nav))); render(); scrollTop(); }
+    else if (t.dataset.nav) { state.step = Math.max(0, Math.min(LAST, state.step + Number(t.dataset.nav))); render(); scrollTop(); }
+    else if (t.dataset.coverColor) { state.cover.color = t.dataset.coverColor; render('[data-cover-color="' + t.dataset.coverColor + '"]'); }
+    else if (t.dataset.backMode) { state.cover.backMode = t.dataset.backMode; render('[data-back-mode="' + t.dataset.backMode + '"]'); }
+    else if (t.dataset.coverClear) { state.cover[t.dataset.coverClear + "Photo"] = ""; render(); }
     else if (t.dataset.book) { setBook(t.dataset.book); render('[data-book="' + t.dataset.book + '"]'); }
     else if (t.dataset.edition) { state.edition = t.dataset.edition; render('[data-edition="' + t.dataset.edition + '"]'); }
     else if (t.dataset.style) { state.style = t.dataset.style; render('[data-style="' + t.dataset.style + '"]'); }
@@ -243,12 +294,16 @@
     var p = state.pages[state.current];
     if (t.dataset.text != null) { var it = p.items[Number(t.dataset.text)]; it.text = t.value; it.example = false; refreshLive(); }
     else if (t.hasAttribute("data-head")) { p.heading = t.value; p.example = false; refreshLive(); }
-    else if (t.dataset.k === "child" || t.dataset.k === "dedication") { state[t.dataset.k] = t.value; var ct = $("#c-title"); if (ct) ct.value = coverTitle(); renderSummary(); save(); }
+    else if (t.dataset.k === "child" || t.dataset.k === "dedication") { state[t.dataset.k] = t.value; refreshCover(); }
+    else if (t.hasAttribute("data-cover-msg")) { state.cover.backMessage = t.value; refreshCover(); }
   });
 
   document.addEventListener("change", function (e) {
     var t = e.target; if (!t.closest(".creator")) return;
-    if (t.dataset.photo != null && t.files && t.files[0]) {
+    if (t.dataset.coverPhoto && t.files && t.files[0]) {
+      state.cover[t.dataset.coverPhoto + "Photo"] = URL.createObjectURL(t.files[0]);
+      render();
+    } else if (t.dataset.photo != null && t.files && t.files[0]) {
       var it = state.pages[state.current].items[Number(t.dataset.photo)];
       it.photo = URL.createObjectURL(t.files[0]);
       it.file = t.files[0];
@@ -269,6 +324,9 @@
       form: "reservation", name: $("#r-name").value.trim(), email: email, book: b.name, edition: state.edition, style: state.style,
       language: state.bilingual ? state.language + " + " + state.language2 : state.language, giftbox: state.giftbox, copies: state.copies,
       total: cur + pl.total, cover: coverTitle(), dedication: state.dedication,
+      coverColour: coverColour(), frontCover: state.cover.frontPhoto ? "own photo" : "our illustration",
+      backCover: state.cover.backMode === "photo" ? (state.cover.backPhoto ? "own photo" : "our illustration") : "pattern",
+      backMessage: state.cover.backMessage,
       pages: state.pages.map(function (p) { return (p.heading || "") + ": " + p.items.map(function (it) { return it.text + (it.photo ? " [photo]" : ""); }).filter(Boolean).join(", "); }).join(" | ")
     };
     F.send(payload).then(function (sent) {
