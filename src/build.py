@@ -87,7 +87,7 @@ def page(title, desc, path, body, active="", extra_js=""):
 def home():
     faq = [
         ("How do the cartoon portraits work?", "You upload ordinary family photos. We turn each one into a cartoon in the style you choose, place it on its page, and send you a full preview to approve before anything is printed."),
-        ("What happens to my photos?", "Your photos are used only to make your book. We delete them and the cartoons 30 days after your book is delivered, and we never use them for advertising or to train anything.", "faq-privacy"),
+        ("What happens to my photos?", "Your photos are used only to make your book, and nobody at Family Board Books looks at them unless you ask us for help. Your original photos are deleted once your book is printed. The cartoons and print file are deleted 30 days after delivery, unless you choose to keep them in your account for reorders; you can delete them there at any time. We never use your photos for advertising or to train anything.", "faq-privacy"),
         ("Can I see the book before it is printed?", "Yes. You see every page on screen and can swap photos, names or words. Nothing is printed until you approve it."),
         ("Which languages can I choose?", "English, Spanish, Catalan, French, German, Italian, Portuguese and Dutch. A bilingual edition puts two languages on every page, which is lovely for families who speak more than one at home."),
         ("What age are the books for?", "Babies and toddlers from birth to about four. The pages are thick board with rounded corners, made to be chewed, dropped and read again and again."),
