@@ -3,8 +3,9 @@
 var FBB = window.FBB = window.FBB || {};
 
 FBB.config = {
-  // Paste a form endpoint here (e.g. a Formspree URL) to receive waitlist sign-ups and reservations.
-  formEndpoint: "",
+  // Waitlist sign-ups and reservations are emailed to hello@ via FormSubmit (formsubmit.co).
+  // After activating, you can replace the email in this URL with the random code FormSubmit gives you.
+  formEndpoint: "https://formsubmit.co/ajax/hello@familyboardbooks.com",
   currency: "€",
   foundingDiscount: 15
 };

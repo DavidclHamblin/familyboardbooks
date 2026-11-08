@@ -80,7 +80,7 @@
       data.form = form.dataset.signup;
       if (!data.email || !/^\S+@\S+\.\S+$/.test(data.email)) { msg.textContent = "Please enter an email address like name@example.com."; return; }
       F.send(data).then(function (sent) {
-        msg.textContent = sent ? "You're on the list. We'll email you when ordering opens." : "Thanks! Sign-ups aren't connected yet, so nothing was sent (preview).";
+        msg.textContent = sent ? "You're on the list. We'll email you when ordering opens." : "Sorry, that didn't go through. Please try again, or email hello@familyboardbooks.com.";
         if (sent) form.reset();
       });
     });
@@ -88,8 +88,14 @@
 
   F.send = function (data) {
     if (!F.config.formEndpoint) return Promise.resolve(false);
-    return fetch(F.config.formEndpoint, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(data) })
-      .then(function (r) { return r.ok; }).catch(function () { return false; });
+    var body = Object.assign({
+      _subject: data.form === "reservation" ? "New book reservation: " + (data.book || "") : "New waitlist sign-up",
+      _template: "table",
+      _replyto: data.email
+    }, data);
+    return fetch(F.config.formEndpoint, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(body) })
+      .then(function (r) { return r.ok ? r.json().then(function (j) { return String(j.success) === "true"; }, function () { return true; }) : false; })
+      .catch(function () { return false; });
   };
 
   $$("[data-year]").forEach(function (el) { el.textContent = new Date().getFullYear(); });

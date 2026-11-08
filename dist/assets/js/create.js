@@ -332,7 +332,7 @@
       pages: state.pages.map(function (p) { return (p.heading || "") + ": " + p.items.map(function (it) { return it.text + (it.photo ? " [photo]" : ""); }).filter(Boolean).join(", "); }).join(" | ")
     };
     F.send(payload).then(function (sent) {
-      if (!sent) { msg.textContent = "Reservations aren't connected yet, so nothing was sent (preview)."; return; }
+      if (!sent) { msg.textContent = "Sorry, that didn't go through. Please try again, or email hello@familyboardbooks.com."; return; }
       state.done = true; render(); scrollTop();
     });
   });
