@@ -224,6 +224,14 @@
       return '<section class="panel"><div class="success"><h2>Your book is reserved</h2><p>We\'ll email you to upload your photos securely and approve your cartoon proof when ordering opens. Founding families get ' + F.config.foundingDiscount + "% off.</p><p><a class=\"btn\" href=\"index.html\">Back to all books</a></p></div></section>";
     }
     var b = F.books[state.book];
+    if (F.shop && F.shop.enabled()) {
+      return '<section class="panel"><h2>Order your book</h2>' +
+        '<p class="notice">Next you\'ll go to our secure checkout to pay. After you order, we\'ll email you a private link to upload your photos, then send you a cartoon proof of every page to approve before we print.</p>' +
+        '<form class="form" id="checkout" novalidate>' +
+        '<label class="check"><input type="checkbox" id="r-ok" name="consent"><span>I have permission to use the photos of everyone in my book.</span></label>' +
+        '<label class="check"><input type="checkbox" id="r-keep" name="keepFiles"><span><strong>Keep my cartoons and print file in my account</strong> so I can reorder or make another book later. Optional. If you leave this unticked, we delete them 30 days after delivery. Your original photos are always deleted once your book is printed.</span></label>' +
+        '<p class="form-msg" role="status"></p><div class="panel-nav"><button type="button" class="btn ghost" data-nav="-1">Back</button><button type="submit" class="btn red">Continue to secure checkout</button></div></form></section>';
+    }
     return '<section class="panel"><h2>Reserve your book</h2>' +
       '<p class="notice">Ordering opens soon. Reserve your book now: no payment is taken today, and you\'ll get ' + F.config.foundingDiscount + "% off as a founding family.</p>" +
       '<form class="form" id="reserve" novalidate><div class="row2"><div class="field"><label for="r-name">Your name</label><input type="text" id="r-name" name="name" autocomplete="name"></div>' +
@@ -312,6 +320,34 @@
       render();
     } else if (t.dataset.k === "language" || t.dataset.k === "language2") { state[t.dataset.k] = t.value; renderSummary(); save(); }
     else if (t.dataset.k === "bilingual" || t.dataset.k === "giftbox") { state[t.dataset.k] = t.checked; render("#" + t.id); }
+  });
+
+  document.addEventListener("submit", function (e) {
+    if (e.target.id !== "checkout") return;
+    e.preventDefault();
+    var form = e.target, msg = $(".form-msg", form), btn = $("button[type=submit]", form);
+    if (!$("#r-ok").checked) { msg.textContent = "Please confirm you have permission to use these photos."; return; }
+    var order = {
+      book: state.book, edition: state.edition, copies: state.copies, bilingual: state.bilingual, giftbox: state.giftbox,
+      details: {
+        "Cover title": coverTitle(), "Art style": styleName(),
+        "Language": state.bilingual ? state.language + " + " + state.language2 : state.language,
+        "Cover colour": coverColour(), "Back cover": state.cover.backMode === "photo" ? "Photo and message" : "Pattern and message",
+        "Back message": state.cover.backMessage,
+        "Keep files in account": $("#r-keep").checked ? "Yes" : "No"
+      },
+      hidden: { "_Dedication": state.dedication }
+    };
+    state.pages.forEach(function (p, i) {
+      var words = p.items.map(function (it) { return it.text; }).filter(Boolean).join(", ");
+      var head = p.heading || ("Page " + (i + 1));
+      if (words || (p.editable && p.heading)) order.hidden["_Page " + String(i + 1).padStart(2, "0") + " " + head] = words || head;
+    });
+    btn.disabled = true; msg.textContent = "Taking you to checkout…";
+    F.shop.checkout(order).then(function (url) { location.href = url; }).catch(function (err) {
+      btn.disabled = false;
+      msg.textContent = "Sorry, checkout didn't open (" + err.message + "). Please try again, or email hello@familyboardbooks.com.";
+    });
   });
 
   document.addEventListener("submit", function (e) {

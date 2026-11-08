@@ -224,7 +224,7 @@ def creator():
 <aside class="summary" id="summary" aria-label="Your book"></aside>
 </div>
 """
-    js = '<script src="assets/js/create.js"></script>'
+    js = '<script src="assets/js/shop.js"></script>\n<script src="assets/js/create.js"></script>'
     return page("Make Your Book", "Create a personalised family board book: choose a book, an art style, then add names and photos for every page.", "create.html", body, "", js)
 
 

@@ -6,6 +6,14 @@ FBB.config = {
   // Waitlist sign-ups and reservations are emailed to hello@ via FormSubmit (formsubmit.co).
   // After activating, you can replace the email in this URL with the random code FormSubmit gives you.
   formEndpoint: "https://formsubmit.co/ajax/hello@familyboardbooks.com",
+  // Shopify (headless). The Storefront token is a public, read-only token meant for websites.
+  shopify: {
+    domain: "nuwppy-0s.myshopify.com",
+    token: "",
+    apiVersion: "2025-07",
+    checkoutLive: false, // keep false until payments, shipping, taxes and the printer are ready
+    handles: { abc: "family-abc", numbers: "family-numbers", colours: "family-colours", emotions: "family-emotions", family: "who-loves-me", sayings: "family-sayings", bilingual: "bilingual-edition", giftbox: "gift-box" }
+  },
   currency: "€",
   foundingDiscount: 15
 };
