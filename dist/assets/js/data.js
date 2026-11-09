@@ -9,7 +9,7 @@ FBB.config = {
   // Shopify (headless). The Storefront token is a public, read-only token meant for websites.
   shopify: {
     domain: "nuwppy-0s.myshopify.com",
-    token: "",
+    token: "8f6930448d2a7ff75a544f49cb66e124",
     apiVersion: "2025-07",
     checkoutLive: false, // keep false until payments, shipping, taxes and the printer are ready
     handles: { abc: "family-abc", numbers: "family-numbers", colours: "family-colours", emotions: "family-emotions", family: "who-loves-me", sayings: "family-sayings", bilingual: "bilingual-edition", giftbox: "gift-box" }
