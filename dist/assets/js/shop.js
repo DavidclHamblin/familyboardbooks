@@ -47,8 +47,8 @@
   }
 
   // UK carts are created for Great Britain so Shopify checks out in pounds with UK shipping.
-  function cartInput(lines) {
-    var r = F.regionInfo ? F.regionInfo() : {}, input = { lines: lines, attributes: attrs({ Source: "familyboardbooks.com creator", Region: r.name || "" }) };
+  function cartInput(lines, extra) {
+    var r = F.regionInfo ? F.regionInfo() : {}, input = { lines: lines, attributes: attrs(Object.assign({ Source: "familyboardbooks.com creator", Region: r.name || "" }, extra || {})) };
     if (r.country) input.buyerIdentity = { countryCode: r.country };
     return input;
   }
@@ -70,7 +70,7 @@
       if (order.bilingual) lines.push({ merchandiseId: maps[1]["FBB-ADDON-BILINGUAL"], quantity: 1, attributes: attrs({ "For": order.details["Cover title"] }) });
       if (order.giftbox) lines.push({ merchandiseId: maps[2]["FBB-ADDON-GIFTBOX"], quantity: 1, attributes: attrs({ "For": order.details["Cover title"] }) });
       return gql("mutation($input:CartInput!){cartCreate(input:$input){cart{checkoutUrl} userErrors{message}}}", {
-        input: cartInput(lines)
+        input: cartInput(lines, order.cartAttributes)
       });
     }).then(function (d) {
       var res = d.cartCreate;

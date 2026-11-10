@@ -94,9 +94,11 @@ def page(title, desc, path, body, active="", extra_js=""):
 # ---------- Home ----------
 def home():
     faq = [
-        ("How do the cartoon portraits work?", "You upload ordinary family photos. We turn each one into a cartoon in the style you choose, place it on its page, and send you a full preview to approve before anything is printed."),
-        ("What happens to my photos?", "Your photos are used only to make your book, and nobody at Family Board Books looks at them unless you ask us for help. Your original photos are deleted once your book is printed. The cartoons and print file are deleted 30 days after delivery, unless you choose to keep them in your account for reorders; you can delete them there at any time. We never use your photos for advertising or to train anything.", "faq-privacy"),
-        ("Can I see the book before it is printed?", "Yes. You see every page on screen and can swap photos, names or words. Nothing is printed until you approve it."),
+        ("How do the cartoon portraits work?", "You add ordinary family photos, and our system uses an AI image tool to redraw each one as a cartoon in the style you choose, then places it on its page. Cartoons are artistic, so they won't be exact likenesses. You can have any portrait drawn again before you approve your book."),
+        ("Can I see my book before I pay?", "Yes. In the book maker you can have the photos on two pages drawn as cartoons for free, so you can see how your book will look before you order. After you order, a private link shows every page as a cartoon. You can ask for any picture to be drawn again, and nothing is printed until you approve it.", "faq-preview"),
+        ("Where are my photos stored?", "In private, encrypted storage in the European Union, in Cloudflare's EU data centres. Your photos are never sent by email or kept in our shop system. Before a photo leaves your phone or computer, we shrink it and remove hidden details such as where it was taken.", "faq-privacy"),
+        ("Who can see my photos?", "Only our automated system. Each book has its own secret key, and there's no screen where our team can browse photos: nobody at Family Board Books looks at them unless you ask us for help. To draw the cartoons, your photos are sent to our AI image provider under business terms that don't allow it to keep them or use them for training. Our printer only receives the finished print file, never your original photos."),
+        ("How long do you keep my photos?", "Free previews are deleted after 14 days if you don't order. Original photos are deleted once your book is printed. Cartoons and the print file are deleted 30 days after delivery, unless you choose to keep them in your account for reorders. You can delete everything yourself at any time from your book's private link. We never use your photos for advertising or to train AI."),
         ("Which languages can I choose?", "English, Spanish, Catalan, French, German, Italian, Portuguese and Dutch. A bilingual edition puts two languages on every page, which is lovely for families who speak more than one at home."),
         ("What age are the books for?", "Babies and toddlers from birth to about four. The pages are thick board with rounded corners, made to be chewed, dropped and read again and again."),
         ("Can we include characters from TV, like Bluey?", "We can't print TV or film characters, because they belong to their creators. You can include your child's own toys and teddies, and they often become the favourite page."),
@@ -131,8 +133,8 @@ def home():
 <div class="sec-head"><p class="eyebrow">How it works</p><h2>Ready in three steps</h2></div>
 <div class="steps">
 <div class="step"><h3>Choose a book and a style</h3><p>Pick ABC, numbers, colours, feelings, family or sayings, then choose how the pictures should look.</p></div>
-<div class="step"><h3>Add names and photos</h3><p>Fill in each page with the people, places and words that matter to you. Phone photos work well.</p></div>
-<div class="step"><h3>Approve, then we print</h3><p>We turn the photos into cartoons and show you every page. Once you approve, we print and post your board book.</p></div>
+<div class="step"><h3>Add names and photos</h3><p>Fill in each page with the people, places and words that matter to you. Phone photos work well, and you can see two pages as cartoons for free before you pay.</p></div>
+<div class="step"><h3>Approve, then we print</h3><p>After you order, a private link shows every page as a cartoon. Ask for any picture to be redrawn, and once you approve, we print and post your board book.</p></div>
 </div></div></section>
 
 <section class="section" style="padding-top:0"><div class="wrap">
@@ -233,8 +235,15 @@ def creator():
 <aside class="summary" id="summary" aria-label="Your book"></aside>
 </div>
 """
-    js = '<script src="assets/js/shop.js"></script>\n<script src="assets/js/create.js"></script>'
+    js = '<script src="assets/js/shop.js"></script>\n<script src="assets/js/cartoons.js"></script>\n<script src="assets/js/create.js"></script>'
     return page("Make Your Book", "Create a personalised family board book: choose a book, an art style, then add names and photos for every page.", "create.html", body, "", js)
+
+
+def proof():
+    body = '<div class="wrap proof" id="proof"></div>'
+    js = '<script src="assets/js/cartoons.js"></script>\n<script src="assets/js/proof.js"></script>'
+    html = page("Your Proof", "Check and approve your Family Board Books proof.", "proof.html", body, "", js)
+    return html.replace("<head>", '<head>\n<meta name="robots" content="noindex">\n<meta name="referrer" content="no-referrer">', 1)
 
 
 FAVICON = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect x="1" y="1" width="14" height="14" rx="4" fill="#EE4B2B"/><rect x="17" y="1" width="14" height="14" rx="4" fill="#FFC21A"/><rect x="1" y="17" width="14" height="14" rx="4" fill="#16A6E3"/><rect x="17" y="17" width="14" height="14" rx="4" fill="#1FB45A"/></svg>"""
@@ -254,7 +263,7 @@ def main():
             shutil.rmtree(d)
         shutil.copytree(ROOT / "assets", d / "assets")
         (d / "assets/favicon.svg").write_text(FAVICON)
-    pages = {"index.html": home(), "create.html": creator()}
+    pages = {"index.html": home(), "create.html": creator(), "proof.html": proof()}
     for k in ORDER:
         pages[f"{BOOKS[k]['slug']}.html"] = book(k)
     for name, html in pages.items():
@@ -262,7 +271,7 @@ def main():
         (PREVIEW / name).write_text(to_preview(html) if name == "index.html" else html)
     (DIST / "CNAME").write_text("www.familyboardbooks.com\n")
     (DIST / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {SITE}/sitemap.xml\n")
-    urls = "".join(f"<url><loc>{SITE}/{'' if n == 'index.html' else n}</loc></url>" for n in pages)
+    urls = "".join(f"<url><loc>{SITE}/{'' if n == 'index.html' else n}</loc></url>" for n in pages if n != "proof.html")
     (DIST / "sitemap.xml").write_text(f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>\n')
     print("built", len(pages), "pages")
 

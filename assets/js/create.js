@@ -60,8 +60,9 @@
   function storeKey() { return "fbb-draft-" + state.book; }
   function save() {
     try {
-      var slim = JSON.parse(JSON.stringify(state)); (slim.pages || []).forEach(function (p) { p.items.forEach(function (it) { it.photo = ""; }); });
-      slim.cover.frontPhoto = ""; slim.cover.backPhoto = "";
+      var slim = JSON.parse(JSON.stringify(state, function (k, v) { return k === "file" || k === "frontFile" || k === "backFile" || k === "busy" || k === "toonErr" ? undefined : v; }));
+      (slim.pages || []).forEach(function (p) { p.items.forEach(function (it) { it.photo = ""; it.toon = ""; }); });
+      slim.cover.frontPhoto = ""; slim.cover.backPhoto = ""; slim.toonInfo = null;
       localStorage.setItem(storeKey(), JSON.stringify(slim));
     } catch (e) { /* storage unavailable: the draft just won't be remembered */ }
   }
@@ -92,7 +93,7 @@
   }
 
   function filledCount() { return state.pages.filter(pageFilled).length; }
-  function pageFilled(p) { return p.items.some(function (it) { return it.photo || (it.text && !it.example); }) || (p.editable && p.heading && !p.example && p.items.some(function (it) { return it.photo; })); }
+  function pageFilled(p) { return p.items.some(function (it) { return it.photo || it.toon || (it.text && !it.example); }) || (p.editable && p.heading && !p.example && p.items.some(function (it) { return it.photo; })); }
 
   // ---------- Render: stepper ----------
   function renderStepper() {
@@ -134,7 +135,8 @@
 
   function previewModel(p) {
     var b = F.books[state.book], kind = b.builder.kind;
-    var items = p.items.filter(function (it) { return it.photo || it.text; }).map(function (it, i) {
+    var items = p.items.filter(function (it) { return it.photo || it.toon || it.text; }).map(function (it, i) {
+      if (it.toon) return { cartoon: it.toon, t: it.text };
       if (it.photo) return { photo: it.photo, t: it.text };
       if (it.example) return { c: F.guessChar(kind === "people" || kind === "sayings" ? p.heading : it.text, i + p.key.charCodeAt(0)), t: it.text };
       return { empty: true, t: it.text };
@@ -156,19 +158,111 @@
       head = '<div class="field"><label for="c-head">' + (kind === "people" ? "Their name" : "The saying") + '</label><input type="text" id="c-head" data-head value="' + esc(p.heading) + '" placeholder="' + (kind === "people" ? "e.g. Granny Mae" : "e.g. Love you to the moon") + '"></div>';
     }
     var slots = p.items.map(function (it, i) {
-      var thumb = it.photo ? '<img src="' + it.photo + '" alt="">' : "+";
+      var thumb = it.toon ? '<img class="toon-thumb" src="' + it.toon + '" alt="">' : it.photo ? '<img src="' + it.photo + '" alt="">' : "+";
       var ph = kind === "letters" ? "e.g. " + (EXAMPLES.letters[p.key] ? EXAMPLES.letters[p.key][0] : p.key + "…") : kind === "people" ? "e.g. lives in Dublin" : kind === "sayings" ? "e.g. says Mummy" : p.prompt;
       return '<div class="slot' + (it.photo ? " has-photo" : "") + '"><div class="slot-thumb" aria-hidden="true">' + thumb + '</div><div class="slot-fields"><input type="text" id="c-t' + i + '" data-text="' + i + '" value="' + esc(it.text) + '" placeholder="' + esc(ph) + '" aria-label="' + esc(p.prompt) + " " + (i + 1) + '">' +
         '<div class="slot-actions"><label class="upload">' + (it.photo ? "Change photo" : "Add photo") + '<input type="file" accept="image/*" data-photo="' + i + '" aria-label="Photo for ' + esc(p.heading || "this page") + " " + (i + 1) + '"></label>' +
-        (it.photo ? '<button type="button" class="linkish" data-remove="' + i + '">Remove photo</button>' : "") + (it.example ? '<span class="chip">Example</span>' : "") + "</div></div></div>";
+        (it.photo || it.toon ? '<button type="button" class="linkish" data-remove="' + i + '">Remove photo</button>' : "") + (it.example ? '<span class="chip">Example</span>' : "") + "</div>" + toonControls(it, i) + "</div></div>";
     }).join("");
     var nav = '<div class="slot-actions"><button type="button" class="btn ghost btn-sm" data-move="-1"' + (state.current === 0 ? " disabled" : "") + '>&larr; Previous page</button><button type="button" class="btn btn-sm" data-move="1"' + (state.current === state.pages.length - 1 ? " disabled" : "") + ">Next page &rarr;</button></div>";
     return '<section class="panel"><h2>Add your names and photos</h2>' +
-      '<p class="notice">The example names are there to show how pages look. Type over them, or <button type="button" class="linkish" data-clear>clear all examples</button>. Photos stay on this device until you reserve your book.</p>' +
+      '<p class="notice">The example names are there to show how pages look. Type over them, or <button type="button" class="linkish" data-clear>clear all examples</button>. ' + (F.toons.enabled() ? "Photos stay on this device unless you make a free cartoon preview or order your book." : "Photos stay on this device until you reserve your book.") + "</p>" + previewBox() +
       '<div class="pages-ui"><div class="page-strip" role="group" aria-label="Pages">' + strip + "</div>" +
       '<div class="editor"><div class="editor-head"><h3>' + esc(p.editable ? "Page " + p.key : "Page " + p.heading) + '</h3><span class="hint">' + esc(p.prompt) + "</span></div>" + head + slots + nav + "</div>" +
-      '<div id="live">' + F.bookPage(previewModel(p)) + '<p class="hint" style="margin-top:12px">Preview. Your photos are turned into ' + esc(styleName()) + " cartoons when we make your book.</p></div></div>" +
+      '<div id="live">' + F.bookPage(previewModel(p)) + '<p class="hint" style="margin-top:12px">' + (p.items.some(function (it) { return it.toon; }) ? "Your cartoon in the " + esc(styleName()) + " style." : "Preview. Your photos are turned into " + esc(styleName()) + " cartoons" + (F.toons.enabled() ? ": try it free on two pages." : " when we make your book.")) + "</p></div></div>" +
       navButtons(true, "Next: design the cover") + "</section>";
+  }
+
+  // ---------- Free cartoon preview ----------
+  function toonInfo() { return state.toonInfo || { freeLeft: Number(F.config.freeCartoons || 6), redosLeft: null, paid: false }; }
+  function previewBox() {
+    if (!F.toons.enabled()) return "";
+    var info = toonInfo(), left = info.paid ? null : info.freeLeft;
+    var line = info.paid ? "Your book is ordered: every photo will be drawn on your proof page."
+      : left > 0 ? "Add photos to up to two pages and we'll draw them as " + esc(styleName()) + " cartoons, so you can see your book before you pay. " + left + " free cartoon" + (left === 1 ? "" : "s") + " left."
+      : "You've used your free preview. Order your book and we'll draw every page.";
+    return '<div class="preview-box"><h3>Free preview: see your cartoons before you pay</h3><p>' + line + "</p>" +
+      '<label class="check"><input type="checkbox" id="pv-ok"' + (state.toonConsent ? " checked" : "") + "><span>I have permission to use the photos of everyone shown. Previews are deleted after 14 days if you don't order.</span></label></div>";
+  }
+  function toonControls(it, i) {
+    if (!F.toons.enabled() || (!it.photo && !it.toon)) return "";
+    var info = toonInfo();
+    if (it.busy) return '<span class="toon-status busy" role="status">Drawing your cartoon… about 20 seconds</span>';
+    var out = "";
+    if (it.toonErr) out += '<span class="toon-status" role="alert">' + esc(it.toonErr) + "</span>";
+    if (it.toon) {
+      if (it.photo && (info.paid || info.redosLeft == null || info.redosLeft > 0)) out += '<button type="button" class="linkish" data-toon="' + i + '">Draw it again</button>';
+      return '<div class="slot-actions"><span class="toon-status">Cartoon ready</span>' + out + "</div>";
+    }
+    if (!info.paid && info.freeLeft <= 0) return '<div class="slot-actions"><span class="toon-status">Drawn after you order</span>' + out + "</div>";
+    return '<div class="slot-actions"><button type="button" class="btn btn-sm btn-toon" data-toon="' + i + '">Draw as cartoon (free)</button>' + out + "</div>";
+  }
+  function applyInfo(j) { if (j) state.toonInfo = { freeLeft: j.freeLeft, redosLeft: j.redosLeft, paid: j.paid }; }
+  function makeToon(pi, ii) {
+    var it = state.pages[pi].items[ii], slot = "p" + pi + "-" + ii, box = $("#pv-ok");
+    if (box && !box.checked) { it.toonErr = "Please tick the permission box above first."; render(); return; }
+    state.toonConsent = true; it.busy = true; it.toonErr = ""; render();
+    var d;
+    F.toons.draft(state.book, state.style, true).then(function (dd) {
+      d = dd;
+      return it.up || !it.file ? null : F.toons.upload(d, slot, it.file).then(function () { it.up = true; });
+    }).then(function () { return F.toons.make(d, slot, state.style); })
+      .then(function (j) { applyInfo(j); return F.toons.image(d, slot); })
+      .then(function (url) { it.toon = url; it.busy = false; afterToon(); })
+      .catch(function (e) {
+        it.busy = false; it.toonErr = e.message;
+        if (e.status === 402) state.toonInfo = Object.assign({}, toonInfo(), { freeLeft: 0, redosLeft: 0 });
+        if (e.status === 403 || e.status === 404) { F.toons.forget(state.book); it.up = false; }
+        afterToon();
+      });
+  }
+  function afterToon() { if (state.step === 2) render(); else save(); }
+
+  // Bring back cartoons made earlier in this browser.
+  function restoreToons() {
+    if (!F.toons.enabled()) return;
+    var book = state.book, d = F.toons.saved(book); if (!d) return;
+    F.toons.status(d).then(function (j) {
+      if (state.book !== book) return;
+      applyInfo(j);
+      var jobs = (j.cartoons || []).map(function (slot) {
+        var m = /^p(\d+)-(\d+)$/.exec(slot); if (!m) return null;
+        var it = state.pages[+m[1]] && state.pages[+m[1]].items[+m[2]]; if (!it) return null;
+        return F.toons.image(d, slot).then(function (url) { it.toon = url; it.up = true; });
+      }).filter(Boolean);
+      (j.photos || []).forEach(function (slot) { var m = /^p(\d+)-(\d+)$/.exec(slot); var it = m && state.pages[+m[1]] && state.pages[+m[1]].items[+m[2]]; if (it) it.up = true; });
+      return Promise.all(jobs).then(function () { render(); });
+    }).catch(function (e) { if (e.status === 403 || e.status === 404) F.toons.forget(book); });
+  }
+
+  // Upload every photo, store the page texts and return the draft for checkout.
+  function uploadAll(msg) {
+    var jobs = [];
+    state.pages.forEach(function (p, pi) { p.items.forEach(function (it, ii) { if (it.file && !it.up) jobs.push({ slot: "p" + pi + "-" + ii, file: it.file, done: function () { it.up = true; } }); }); });
+    ["front", "back"].forEach(function (side) {
+      var f = state.cover[side + "File"];
+      if (f && !(side === "back" && state.cover.backMode !== "photo")) jobs.push({ slot: "cover-" + side, file: f, done: function () {} });
+    });
+    return F.toons.draft(state.book, state.style, true).then(function (d) {
+      var n = 0;
+      return jobs.reduce(function (pr, job) {
+        return pr.then(function () {
+          n++; msg.textContent = "Uploading your photos securely (" + n + " of " + jobs.length + ")…";
+          return F.toons.upload(d, job.slot, job.file).then(job.done);
+        });
+      }, Promise.resolve()).then(function () {
+        var kind = F.books[state.book].builder.kind;
+        return F.toons.update(d, {
+          style: state.style, keep: !!($("#r-keep") && $("#r-keep").checked),
+          pages: state.pages.map(function (p, pi) {
+            return { heading: p.example ? "" : p.heading || "", color: p.color, kind: kind,
+              items: p.items.map(function (it, ii) { return { t: it.example ? "" : it.text || "", slot: it.file || it.up ? "p" + pi + "-" + ii : null }; }) };
+          }),
+          cover: { title: coverTitle(), color: coverColour(), backMode: state.cover.backMode, backMessage: state.cover.backMessage,
+            front: !!state.cover.frontFile, back: !!state.cover.backFile && state.cover.backMode === "photo" }
+        });
+      }).then(function () { return d; });
+    });
   }
 
   function coverColour() { return state.cover.color || F.books[state.book].color; }
@@ -226,7 +320,7 @@
     var b = F.books[state.book];
     if (F.shop && F.shop.enabled()) {
       return '<section class="panel"><h2>Order your book</h2>' +
-        '<p class="notice">Next you\'ll go to our secure checkout to pay. After you order, we\'ll email you a private link to upload your photos, then send you a cartoon proof of every page to approve before we print.</p>' +
+        '<p class="notice">' + (F.toons.enabled() ? "Your photos upload securely when you continue, then you\'ll go to our secure checkout to pay. After you order, you\'ll get a private link to see every page as a cartoon, ask for changes and approve your book before we print." : "Next you\'ll go to our secure checkout to pay. After you order, we\'ll email you a private link to upload your photos, then send you a cartoon proof of every page to approve before we print.") + "</p>" +
         '<form class="form" id="checkout" novalidate>' +
         '<label class="check"><input type="checkbox" id="r-ok" name="consent"><span>I have permission to use the photos of everyone in my book.</span></label>' +
         '<label class="check"><input type="checkbox" id="r-keep" name="keepFiles"><span><strong>Keep my cartoons and print file in my account</strong> so I can reorder or make another book later. Optional. If you leave this unticked, we delete them 30 days after delivery. Your original photos are always deleted once your book is printed.</span></label>' +
@@ -284,14 +378,19 @@
     else if (t.dataset.nav) { state.step = Math.max(0, Math.min(LAST, state.step + Number(t.dataset.nav))); render(); scrollTop(); }
     else if (t.dataset.coverColor) { state.cover.color = t.dataset.coverColor; render('[data-cover-color="' + t.dataset.coverColor + '"]'); }
     else if (t.dataset.backMode) { state.cover.backMode = t.dataset.backMode; render('[data-back-mode="' + t.dataset.backMode + '"]'); }
-    else if (t.dataset.coverClear) { state.cover[t.dataset.coverClear + "Photo"] = ""; render(); }
-    else if (t.dataset.book) { setBook(t.dataset.book); render('[data-book="' + t.dataset.book + '"]'); }
+    else if (t.dataset.coverClear) { state.cover[t.dataset.coverClear + "Photo"] = ""; state.cover[t.dataset.coverClear + "File"] = null; render(); }
+    else if (t.dataset.book) { setBook(t.dataset.book); state.toonInfo = null; render('[data-book="' + t.dataset.book + '"]'); restoreToons(); }
     else if (t.dataset.edition) { state.edition = t.dataset.edition; render('[data-edition="' + t.dataset.edition + '"]'); }
     else if (t.dataset.style) { state.style = t.dataset.style; render('[data-style="' + t.dataset.style + '"]'); }
     else if (t.dataset.copies) { state.copies = Math.max(0, Math.min(10, state.copies + Number(t.dataset.copies))); render('[data-copies="' + t.dataset.copies + '"]'); }
     else if (t.dataset.page) { state.current = Number(t.dataset.page); render('[data-page="' + state.current + '"]'); }
     else if (t.dataset.move) { state.current = Math.max(0, Math.min(state.pages.length - 1, state.current + Number(t.dataset.move))); render('[data-move="' + t.dataset.move + '"]'); }
-    else if (t.dataset.remove) { var it = state.pages[state.current].items[Number(t.dataset.remove)]; it.photo = ""; render(); }
+    else if (t.dataset.remove) {
+      var ri = Number(t.dataset.remove), it = state.pages[state.current].items[ri], rd = F.toons.enabled() && F.toons.saved(state.book);
+      if (it.up && rd) F.toons.removePhoto(rd, "p" + state.current + "-" + ri).catch(function () {});
+      it.photo = ""; it.file = null; it.toon = ""; it.up = false; it.toonErr = ""; render();
+    }
+    else if (t.dataset.toon != null) { makeToon(state.current, Number(t.dataset.toon)); }
     else if (t.hasAttribute("data-clear")) {
       state.pages.forEach(function (p) { if (p.example) { p.heading = ""; p.example = false; } p.items.forEach(function (it) { if (it.example) { it.text = ""; it.example = false; } }); });
       render();
@@ -311,14 +410,16 @@
     var t = e.target; if (!t.closest(".creator")) return;
     if (t.dataset.coverPhoto && t.files && t.files[0]) {
       state.cover[t.dataset.coverPhoto + "Photo"] = URL.createObjectURL(t.files[0]);
+      state.cover[t.dataset.coverPhoto + "File"] = t.files[0];
       render();
     } else if (t.dataset.photo != null && t.files && t.files[0]) {
       var it = state.pages[state.current].items[Number(t.dataset.photo)];
       it.photo = URL.createObjectURL(t.files[0]);
-      it.file = t.files[0];
+      it.file = t.files[0]; it.toon = ""; it.up = false; it.toonErr = "";
       if (it.example) { it.text = ""; it.example = false; }
       render();
     } else if (t.dataset.k === "language" || t.dataset.k === "language2") { state[t.dataset.k] = t.value; renderSummary(); save(); }
+    else if (t.id === "pv-ok") { state.toonConsent = t.checked; save(); }
     else if (t.dataset.k === "bilingual" || t.dataset.k === "giftbox") { state[t.dataset.k] = t.checked; render("#" + t.id); }
   });
 
@@ -344,7 +445,12 @@
       if (words || (p.editable && p.heading)) order.hidden["_Page " + String(i + 1).padStart(2, "0") + " " + head] = words || head;
     });
     btn.disabled = true; msg.textContent = "Taking you to checkout…";
-    F.shop.checkout(order).then(function (url) { location.href = url; }).catch(function (err) {
+    (F.toons.enabled() ? uploadAll(msg).then(function (d) {
+      order.cartAttributes = { _draft: d.id, "Your book link": F.toons.proofLink(d) };
+    }) : Promise.resolve()).then(function () {
+      msg.textContent = "Taking you to checkout…";
+      return F.shop.checkout(order);
+    }).then(function (url) { location.href = url; }).catch(function (err) {
       btn.disabled = false;
       msg.textContent = "Sorry, checkout didn't open (" + err.message + "). Please try again, or email hello@familyboardbooks.com.";
     });
@@ -375,8 +481,6 @@
 
   function scrollTop() { var el = $(".creator"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }
 
-  /* Later: send each uploaded photo to the cartoon API and swap it for the result.
-     FBB.makeCartoons = function (pages, style) { ... } */
-
   render();
+  restoreToons();
 })();

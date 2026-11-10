@@ -1,0 +1,34 @@
+# Family Board Books photo and cartoon API (Cloudflare Worker).
+# Deploy: npx wrangler deploy   (from this folder, after `npx wrangler login`)
+name = "familyboardbooks-api"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# Private photo storage, kept in Cloudflare's EU jurisdiction.
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "fbb-photos"
+jurisdiction = "eu"
+
+# Daily clean-up (03:17 UTC): unpaid previews, printed originals, delivered books.
+[triggers]
+crons = ["17 3 * * *"]
+
+# At most 5 new books per minute from one connection.
+[[ratelimits]]
+name = "DRAFT_LIMIT"
+namespace_id = "1001"
+simple = { limit = 5, period = 60 }
+
+[vars]
+ENGINE = "mock"            # mock (no AI, for testing), gemini or openai
+GEMINI_MODEL = "gemini-3.1-flash-image"
+OPENAI_MODEL = "gpt-image-2"
+OPENAI_QUALITY = "medium"
+ALLOWED_ORIGINS = "https://www.familyboardbooks.com,https://familyboardbooks.com"
+FREE_SLOTS = "6"           # free cartoons before paying (two pages)
+FREE_GENS = "10"           # free tries in total, so a few redos
+UNPAID_DAYS = "14"         # unpaid previews are deleted after this many days
+
+# Secrets (set with `npx wrangler secret put NAME`, never written in this file):
+#   GEMINI_API_KEY, OPENAI_API_KEY, SHOPIFY_WEBHOOK_SECRET, ADMIN_TOKEN, TURNSTILE_SECRET (optional)

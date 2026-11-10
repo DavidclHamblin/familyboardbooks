@@ -14,6 +14,9 @@ FBB.config = {
     checkoutLive: false, // keep false until payments, shipping, taxes and the printer are ready
     handles: { abc: "family-abc", numbers: "family-numbers", colours: "family-colours", emotions: "family-emotions", family: "who-loves-me", sayings: "family-sayings", bilingual: "bilingual-edition", giftbox: "gift-box" }
   },
+  // Photo and cartoon service (Cloudflare Worker in /worker). Empty = free preview switched off.
+  api: "",
+  freeCartoons: 6,
   currency: "€",
   foundingDiscount: 15
 };

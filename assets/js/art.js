@@ -163,7 +163,8 @@ window.FBB = window.FBB || {};
     html += '<div class="bpage-h">' + esc(p.heading) + "</div>";
     html += '<div class="bpage-items">';
     items.slice(0, 3).forEach(function (it, i) {
-      var art = it.photo ? FBB.photoPortrait(it.photo, style, p.color, p.heading + i)
+      var art = it.cartoon ? '<img class="portrait toon" src="' + it.cartoon + '" alt="Cartoon portrait">'
+        : it.photo ? FBB.photoPortrait(it.photo, style, p.color, p.heading + i)
         : it.c ? FBB.portrait(it.c, style, p.color, p.heading + i)
         : FBB.emptyPortrait(p.color);
       html += '<figure class="bpage-item">' + art + (it.t ? "<figcaption>" + esc(it.t) + "</figcaption>" : "") + "</figure>";

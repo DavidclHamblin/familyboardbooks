@@ -369,3 +369,20 @@ main { overflow-x: clip; }
 .region-bar { margin: 0; padding: 9px 16px; text-align: center; font-size: 14px; font-weight: 600; background: color-mix(in srgb, var(--sky) 16%, var(--bg)); border-bottom: 1px solid var(--line); }
 @media (max-width: 820px) { .region { margin-left: auto; } .site-head .region + .btn { margin-left: 0; } .site-head .wrap { gap: 10px; } }
 @media (max-width: 420px) { .region-select { padding: 8px 24px 8px 10px; font-size: 13px; background-position: right 8px center; } }
+
+/* Cartoon portraits from the cartoon service */
+.portrait.toon { aspect-ratio: 1 / 1; object-fit: contain; border-radius: 12%; background: #fff; }
+.slot-thumb img.toon-thumb { object-fit: contain; background: #fff; }
+.preview-box { display: grid; gap: 10px; padding: 14px 16px; border-radius: 16px; background: color-mix(in srgb, var(--sun) 18%, var(--surface)); border: 1px solid color-mix(in srgb, var(--sun) 45%, var(--line)); }
+.preview-box h3 { margin: 0; font-size: 17px; }
+.preview-box p { margin: 0; font-size: 15px; }
+.btn-toon { --b: var(--grape); }
+.toon-status { font-size: 14px; font-weight: 600; color: var(--muted); }
+.toon-status.busy::before { content: ""; display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .toon-status.busy::before { animation: none; } }
+.proof { display: grid; gap: 24px; padding-block: 28px 60px; }
+.proof h1 { margin: 6px 0 10px; font-size: clamp(28px, 5vw, 44px); }
+.proof-grid { display: grid; gap: 22px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+.proof-page { margin: 0; display: grid; gap: 10px; }
+.proof-page figcaption { font-weight: 700; display: grid; gap: 6px; }
