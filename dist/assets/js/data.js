@@ -15,7 +15,7 @@ FBB.config = {
     handles: { abc: "family-abc", numbers: "family-numbers", colours: "family-colours", emotions: "family-emotions", family: "who-loves-me", sayings: "family-sayings", bilingual: "bilingual-edition", giftbox: "gift-box" }
   },
   // Photo and cartoon service (Cloudflare Worker in /worker). Empty = free preview switched off.
-  api: "",
+  api: "https://familyboardbooks-api.silent-forest-c98a.workers.dev",
   freeCartoons: 6,
   currency: "€",
   foundingDiscount: 15
@@ -33,7 +33,8 @@ FBB.regions = {
 FBB.gbp = { 49: 42, 59: 50, 29: 25, 39: 34, 47: 40, 25: 22, 6: 5, 5: 4 };
 
 FBB.styles = [
-  { id: "splash", name: "Paint Splash", line: "Bold cartoon portraits on bright paint splats. Our signature look." },
+  { id: "splash", name: "Cartoon Splash", line: "Bold, bright cartoon portraits on paint splats. Our signature look." },
+  { id: "painted", name: "Painted Splash", line: "Painterly portraits that stay closest to your photos, on paint splats." },
   { id: "watercolour", name: "Watercolour", line: "Soft, gentle washes of colour. Lovely for babies." },
   { id: "comic", name: "Comic Pop", line: "Strong outlines and halftone dots, like a favourite comic." },
   { id: "storybook", name: "Storybook", line: "Calm pastel frames with a stitched edge, like a classic picture book." }

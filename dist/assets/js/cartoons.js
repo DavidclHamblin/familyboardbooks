@@ -2,7 +2,7 @@
    Photos are resized in the browser first, which also strips hidden data such as GPS location. */
 (function () {
   "use strict";
-  var F = window.FBB, API = (F.config.api || testApi() || "").replace(/\/+$/, "");
+  var F = window.FBB, API = (testApi() || F.config.api || "").replace(/\/+$/, "");
   // For testing before launch: localStorage "fbb-api" can point this browser at a test service.
   function testApi() { try { return localStorage.getItem("fbb-api"); } catch (e) { return ""; } }
   var T = F.toons = {};

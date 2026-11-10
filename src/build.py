@@ -124,7 +124,7 @@ def home():
 
 <section id="styles" class="section"><div class="wrap demo">
 <div class="demo-stage" id="demo-stage" aria-live="polite"></div>
-<div><div class="sec-head" style="margin-bottom:0"><p class="eyebrow">Four art styles</p><h2>Your family, drawn the way you like</h2>
+<div><div class="sec-head" style="margin-bottom:0"><p class="eyebrow">Five art styles</p><h2>Your family, drawn the way you like</h2>
 <p class="lede">Every photo becomes a cartoon portrait in one consistent style, so Grandpa, the cousins and the dog all belong on the same page.</p></div>
 <div class="style-tabs" id="style-tabs"></div></div>
 </div></section>
@@ -209,7 +209,7 @@ def book(k):
 <div class="sec-head"><p class="eyebrow">Editions and prices</p><h2>Choose your edition</h2></div>
 <div class="editions">{eds}</div>
 <div class="opts">
-<div class="opt"><h3>Four art styles</h3><p>Paint Splash, Watercolour, Comic Pop or Storybook. You choose when you start.</p></div>
+<div class="opt"><h3>Five art styles</h3><p>Cartoon Splash, Painted Splash, Watercolour, Comic Pop or Storybook. You choose when you start.</p></div>
 <div class="opt"><h3>Bilingual edition +{money(6)}</h3><p>Two languages on every page, from English, Spanish, Catalan, French, German, Italian, Portuguese and Dutch.</p></div>
 <div class="opt"><h3>Gift box +{money(5)}</h3><p>A keepsake box with a ribbon, ready to give to grandparents.</p></div>
 </div></div></section>

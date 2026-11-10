@@ -24,7 +24,9 @@ namespace_id = "1001"
 simple = { limit = 5, period = 60 }
 
 [vars]
-ENGINE = "mock"            # mock (no AI, for testing), gemini or openai
+ENGINE = "auto"            # auto (per style, below), gemini or openai (force one), mock (no AI, for testing)
+# Which model draws each style. If one fails, the other is used as a backup.
+STYLE_ENGINES = '{"splash":"gemini","painted":"openai","watercolour":"gemini","comic":"gemini","storybook":"openai"}'
 GEMINI_MODEL = "gemini-3.1-flash-image"
 OPENAI_MODEL = "gpt-image-2"
 OPENAI_QUALITY = "medium"
@@ -32,6 +34,8 @@ ALLOWED_ORIGINS = "https://www.familyboardbooks.com,https://familyboardbooks.com
 FREE_SLOTS = "6"           # free cartoons before paying (two pages)
 FREE_GENS = "10"           # free tries in total, so a few redos
 UNPAID_DAYS = "14"         # unpaid previews are deleted after this many days
+FREE_DAILY_CAP = "150"     # free preview cartoons per day for the whole site (cost ceiling)
+FREE_IP_DAILY = "12"       # free preview cartoons per day from one internet connection
 
 # Secrets (set with `npx wrangler secret put NAME`, never written in this file):
 #   GEMINI_API_KEY, OPENAI_API_KEY, SHOPIFY_WEBHOOK_SECRET, ADMIN_TOKEN, TURNSTILE_SECRET (optional)

@@ -17,7 +17,8 @@
 
 const SLOT_RE = /^(p\d{1,3}-\d{1,2}|cover-front|cover-back)$/;
 const ID_RE = /^[a-z0-9]{20}$/;
-const STYLES = ["splash", "watercolour", "comic", "storybook"];
+const STYLES = ["splash", "painted", "watercolour", "comic", "storybook"];
+const ENGINES = ["gemini", "openai"];
 const MAX_PHOTO_BYTES = 12 * 1024 * 1024;
 const DAY = 86400000;
 
@@ -27,6 +28,8 @@ const STYLE_PROMPTS = {
   comic: "a bright comic-book style with strong black outlines, flat bold colours and halftone dots, on a round coloured background",
   storybook: "a calm, classic picture-book illustration in soft pastel colours with gentle shading, inside a rounded pastel frame"
 };
+// "Painted Splash" uses the same brief; the difference comes from the model it is sent to (see STYLE_ENGINES).
+STYLE_PROMPTS.painted = STYLE_PROMPTS.splash;
 
 function prompt(style) {
   return "Turn the person or people in the FIRST image into a cartoon portrait for a children's board book, in " +
@@ -131,7 +134,8 @@ function freeSlots(meta) { return meta.freeSlots; }
 
 // ---------- cartoon engines ----------
 async function styleRefs(env, style) {
-  const list = await env.BUCKET.list({ prefix: "styles/" + style + "/" });
+  let list = await env.BUCKET.list({ prefix: "styles/" + style + "/" });
+  if (!list.objects.length && style === "painted") list = await env.BUCKET.list({ prefix: "styles/splash/" });
   const out = [];
   for (const o of list.objects.slice(0, 2)) {
     const obj = await env.BUCKET.get(o.key);
@@ -176,13 +180,43 @@ async function openai(env, photo, refs, style) {
 // "mock" returns the photo unchanged: for testing the whole flow without paying for AI.
 async function mock(env, photo) { return { bytes: photo.bytes, type: photo.type }; }
 
+// Which model draws which style. ENGINE=auto uses STYLE_ENGINES; ENGINE=gemini/openai forces one; mock skips AI.
+function engineFor(env, style) {
+  const forced = env.ENGINE || "mock";
+  if (forced !== "auto") return forced;
+  let map = {};
+  try { map = JSON.parse(env.STYLE_ENGINES || "{}"); } catch (e) {}
+  return ENGINES.includes(map[style]) ? map[style] : "gemini";
+}
+function hasKey(env, engine) { return engine === "gemini" ? !!env.GEMINI_API_KEY : engine === "openai" ? !!env.OPENAI_API_KEY : false; }
+const RUN = { gemini, openai };
+
 async function makeCartoon(env, photo, style) {
-  const engine = env.ENGINE || "mock";
-  if (engine === "mock") return mock(env, photo);
+  const first = engineFor(env, style);
+  if (first === "mock") return Object.assign(await mock(env, photo), { engine: "mock" });
   const refs = await styleRefs(env, style);
-  if (engine === "gemini") return gemini(env, photo, refs, style);
-  if (engine === "openai") return openai(env, photo, refs, style);
-  throw new Error("Unknown ENGINE " + engine);
+  // If the chosen model fails (outage, refusal), the other one draws it so the customer isn't stuck.
+  const order = [first].concat(ENGINES.filter(e => e !== first)).filter(e => hasKey(env, e));
+  let lastErr = new Error("No AI key set for " + first);
+  for (const eng of order) {
+    try { return Object.assign(await RUN[eng](env, photo, refs, style), { engine: eng }); }
+    catch (e) { lastErr = e; console.error("engine failed", eng, e.message); }
+  }
+  throw lastErr;
+}
+
+// Cost ceiling for free previews: a daily total for the whole site and per internet connection.
+// Connections are stored only as a salted hash, and the counters are deleted after two days.
+function today() { return new Date().toISOString().slice(0, 10); }
+async function freeAllowance(env, req) {
+  const key = "stats/free-" + today() + ".json";
+  const o = await env.BUCKET.get(key);
+  const st = o ? await o.json() : { total: 0, ips: {} };
+  const ip = await sha256(today() + "|" + (req.headers.get("CF-Connecting-IP") || "unknown"));
+  const ipKey = ip.slice(0, 16);
+  if (st.total >= num(env.FREE_DAILY_CAP, 150)) return { ok: false, message: "So many families are trying the free preview today that we've paused it until tomorrow. You can still order your book and see every page." };
+  if ((st.ips[ipKey] || 0) >= num(env.FREE_IP_DAILY, 12)) return { ok: false, message: "You've made lots of free cartoons today. Order your book to see every page, or try again tomorrow." };
+  return { ok: true, record: async () => { st.total++; st.ips[ipKey] = (st.ips[ipKey] || 0) + 1; await env.BUCKET.put(key, JSON.stringify(st)); } };
 }
 
 // ---------- abuse protection ----------
@@ -228,7 +262,7 @@ async function handle(req, env) {
   if (m === "OPTIONS") return new Response(null, { status: 204, headers: h });
   const J = (d, s) => json(d, s, h), E = (s, msg) => err(s, msg, h);
 
-  if (path === "/api/health") return J({ ok: true, engine: env.ENGINE || "mock" });
+  if (path === "/api/health") return J({ ok: true, engine: env.ENGINE || "mock", gemini: !!env.GEMINI_API_KEY, openai: !!env.OPENAI_API_KEY, shopify: !!env.SHOPIFY_WEBHOOK_SECRET });
 
   // Shopify calls this when an order is paid.
   if (path === "/api/shopify/orders-paid" && m === "POST") {
@@ -328,15 +362,21 @@ async function handle(req, env) {
       const limit = Object.keys(meta.slots).length * 4 + 20;
       if (meta.gens >= meta.freeGens + limit) return E(429, "Too many redos. Please email hello@familyboardbooks.com and we'll help.");
     }
+    let allowance = null;
+    if (!meta.paid) {
+      allowance = await freeAllowance(env, req);
+      if (!allowance.ok) return E(429, allowance.message);
+    }
     const obj = await env.BUCKET.get("orig/" + id + "/" + slot);
     if (!obj) return E(404, "Upload the photo first.");
     let out;
     try { out = await makeCartoon(env, { bytes: await obj.arrayBuffer(), type: obj.httpMetadata?.contentType || "image/jpeg" }, style); }
     catch (e) { console.error("cartoon failed", id, slot, e.message); return E(502, "We couldn't draw this one. Please try again, or try a different photo."); }
     await env.BUCKET.put("toon/" + id + "/" + slot + ".png", out.bytes, { httpMetadata: { contentType: out.type } });
+    if (allowance && out.engine !== "mock") await allowance.record();
     const fresh = await getMeta(env, id) || meta;  // re-read so parallel uploads aren't lost
     const fs = fresh.slots[slot] || (fresh.slots[slot] = { gens: 0, orig: true });
-    fs.toon = true; fs.gens = (fs.gens || 0) + 1; fs.style = style; fresh.gens = (fresh.gens || 0) + 1;
+    fs.toon = true; fs.gens = (fs.gens || 0) + 1; fs.style = style; fs.engine = out.engine; fresh.gens = (fresh.gens || 0) + 1;
     await putMeta(env, fresh);
     return J({ ok: true, slot, ...publicStatus(fresh) });
   }
@@ -369,6 +409,10 @@ async function cleanup(env) {
     }
     cursor = list.truncated ? list.cursor : undefined;
   } while (cursor);
+  const keepStats = [today(), new Date(now - DAY).toISOString().slice(0, 10)];
+  const stats = await env.BUCKET.list({ prefix: "stats/" });
+  const old = stats.objects.map(o => o.key).filter(k => !keepStats.some(d => k.includes(d)));
+  if (old.length) await env.BUCKET.delete(old);
   console.log("cleanup removed", removed);
 }
 
