@@ -18,6 +18,17 @@ FBB.config = {
   foundingDiscount: 15
 };
 
+/* Shipping regions. "ordering" switches real checkout on per region (together with
+   shopify.checkoutLive). Keep the UK off until a UK printer and UK VAT number are in place. */
+FBB.regions = {
+  eu: { id: "eu", label: "EU · €", name: "Europe", currency: "€", ordering: true, notice: "" },
+  uk: { id: "uk", label: "UK · £", name: "United Kingdom", currency: "£", country: "GB", ordering: false,
+        notice: "UK delivery opens soon. Prices are in pounds; reserve your book now and get 15% off as a founding family." }
+};
+
+/* UK prices in pounds, keyed by the euro price. Keep these the same as the GBP prices in Shopify Markets. */
+FBB.gbp = { 49: 42, 59: 50, 29: 25, 39: 34, 47: 40, 25: 22, 6: 5, 5: 4 };
+
 FBB.styles = [
   { id: "splash", name: "Paint Splash", line: "Bold cartoon portraits on bright paint splats. Our signature look." },
   { id: "watercolour", name: "Watercolour", line: "Soft, gentle washes of colour. Lovely for babies." },

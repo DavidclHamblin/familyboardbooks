@@ -2,7 +2,7 @@
    Photos stay in the visitor's browser for now; the cartoon API plugs in later (see makeCartoons). */
 (function () {
   "use strict";
-  var F = window.FBB, cur = F.config.currency;
+  var F = window.FBB, cur = F.regionInfo().currency;
   function $(s, r) { return (r || document).querySelector(s); }
   function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
   var esc = F.esc;
@@ -83,12 +83,12 @@
   function priceLines() {
     var b = F.books[state.book], ed = b.editions.filter(function (e) { return e.id === state.edition; })[0];
     var copy = b.editions.filter(function (e) { return e.isCopy; })[0];
-    var lines = [[b.name + " (" + ed.name + ")", ed.price]];
-    if (state.bilingual) lines.push(["Bilingual edition", F.addons.bilingual.price]);
-    if (state.giftbox) lines.push(["Gift box", F.addons.giftbox.price]);
-    if (state.copies && copy) lines.push([state.copies + " extra cop" + (state.copies > 1 ? "ies" : "y"), state.copies * copy.price]);
+    var A = F.amount, lines = [[b.name + " (" + ed.name + ")", A(ed.price)]];
+    if (state.bilingual) lines.push(["Bilingual edition", A(F.addons.bilingual.price)]);
+    if (state.giftbox) lines.push(["Gift box", A(F.addons.giftbox.price)]);
+    if (state.copies && copy) lines.push([state.copies + " extra cop" + (state.copies > 1 ? "ies" : "y"), state.copies * A(copy.price)]);
     var total = lines.reduce(function (s, l) { return s + l[1]; }, 0);
-    return { lines: lines, total: total, copyPrice: copy ? copy.price : 0 };
+    return { lines: lines, total: total, copyPrice: copy ? A(copy.price) : 0 };
   }
 
   function filledCount() { return state.pages.filter(pageFilled).length; }
@@ -106,10 +106,10 @@
     var b = F.books[state.book];
     var books = F.order.map(function (k) {
       var x = F.books[k];
-      return '<button type="button" class="choice" data-book="' + k + '" aria-pressed="' + (k === state.book) + '" style="--cc:var(--' + x.color + ')"><span class="cg">' + F.glyph(x.glyph) + "</span><strong>" + esc(x.name) + "</strong><span>" + esc(x.tagline) + '</span><span class="p">From ' + cur + F.minPrice(x) + "</span></button>";
+      return '<button type="button" class="choice" data-book="' + k + '" aria-pressed="' + (k === state.book) + '" style="--cc:var(--' + x.color + ')"><span class="cg">' + F.glyph(x.glyph) + "</span><strong>" + esc(x.name) + "</strong><span>" + esc(x.tagline) + '</span><span class="p">From ' + F.money(F.minPrice(x)) + "</span></button>";
     }).join("");
     var eds = b.editions.filter(function (e) { return !e.isCopy; }).map(function (e) {
-      return '<button type="button" class="choice" data-edition="' + e.id + '" aria-pressed="' + (e.id === state.edition) + '"><strong>' + esc(e.name) + "</strong><span>" + esc(e.pages) + " &middot; " + esc(e.detail) + '</span><span class="p">' + cur + e.price + "</span></button>";
+      return '<button type="button" class="choice" data-edition="' + e.id + '" aria-pressed="' + (e.id === state.edition) + '"><strong>' + esc(e.name) + "</strong><span>" + esc(e.pages) + " &middot; " + esc(e.detail) + '</span><span class="p">' + F.money(e.price) + "</span></button>";
     }).join("");
     var pl = priceLines();
     var langs = F.languages.map(function (l) { return "<option" + (l === state.language ? " selected" : "") + ">" + esc(l) + "</option>"; }).join("");
@@ -118,8 +118,8 @@
       "<h3>Edition</h3><div class=\"choice-grid\">" + eds + "</div>" +
       '<div class="row2"><div class="field"><label for="c-lang">Language</label><select id="c-lang" data-k="language">' + langs + "</select></div>" +
       '<div class="field"' + (state.bilingual ? "" : " hidden") + '><label for="c-lang2">Second language</label><select id="c-lang2" data-k="language2">' + langs2 + "</select></div></div>" +
-      '<label class="check"><input type="checkbox" id="c-bi" data-k="bilingual"' + (state.bilingual ? " checked" : "") + "><span>" + esc(F.addons.bilingual.name) + "</span><strong>+" + cur + F.addons.bilingual.price + "</strong></label>" +
-      '<label class="check"><input type="checkbox" id="c-gift" data-k="giftbox"' + (state.giftbox ? " checked" : "") + "><span>" + esc(F.addons.giftbox.name) + "</span><strong>+" + cur + F.addons.giftbox.price + "</strong></label>" +
+      '<label class="check"><input type="checkbox" id="c-bi" data-k="bilingual"' + (state.bilingual ? " checked" : "") + "><span>" + esc(F.addons.bilingual.name) + "</span><strong>+" + F.money(F.addons.bilingual.price) + "</strong></label>" +
+      '<label class="check"><input type="checkbox" id="c-gift" data-k="giftbox"' + (state.giftbox ? " checked" : "") + "><span>" + esc(F.addons.giftbox.name) + "</span><strong>+" + F.money(F.addons.giftbox.price) + "</strong></label>" +
       '<div class="check" style="cursor:default"><span>Extra copies for grandparents and godparents (' + cur + pl.copyPrice + ' each)</span><span class="qty"><button type="button" data-copies="-1" aria-label="One fewer copy">&minus;</button><output id="c-copies">' + state.copies + '</output><button type="button" data-copies="1" aria-label="One more copy">+</button></span></div>' +
       navButtons(false, "Next: choose a style") + "</section>";
   }

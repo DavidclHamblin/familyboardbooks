@@ -21,8 +21,10 @@
 <header class="site-head"><div class="wrap">
 <a class="logo" href="index.html" aria-label="Family Board Books home"><span class="logo-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Family Board Books</a>
 <nav class="nav" aria-label="Main"><a href="index.html#books" aria-current="page">Books</a><a href="index.html#how">How it works</a><a href="index.html#pricing">Pricing</a><a href="index.html#faq">FAQ</a></nav>
+<label class="region"><span class="sr-only">Deliver to</span><select class="region-select" aria-label="Deliver to"><option value="eu">EU · €</option><option value="uk">UK · £</option></select></label>
 <a class="btn btn-sm red" href="create.html">Start your book</a>
 </div></header>
+<p class="region-bar" id="region-bar" role="status" hidden></p>
 <main>
 
 <div class="wrap crumbs"><a href="index.html#books">All books</a> / Family Colours</div>
@@ -30,7 +32,7 @@
 <div class="bhero-copy">
 <h1>Family Colours</h1>
 <p class="lede">Ten colours, each one found in your family&#x27;s world: favourite clothes, toys, cars and places.</p>
-<div class="bhero-meta"><span class="chip">Ages 1 to 4 years</span><span class="chip">From €39</span><span class="chip">Thick board pages</span></div>
+<div class="bhero-meta"><span class="chip">Ages 1 to 4 years</span><span class="chip">From <span class="money" data-eur="39">€39</span></span><span class="chip">Thick board pages</span></div>
 <div class="hero-cta"><a class="btn red" href="create.html?book=colours">Start your Colours book</a><a class="btn ghost" href="#editions">See prices</a></div>
 </div>
 <div class="stack" data-samples="colours" data-max="2" data-style="splash"></div>
@@ -47,11 +49,11 @@
 
 <section id="editions" class="section" style="--bc:var(--leaf);padding-top:0"><div class="wrap">
 <div class="sec-head"><p class="eyebrow">Editions and prices</p><h2>Choose your edition</h2></div>
-<div class="editions"><div class="edition featured"><span class="badge">Most popular</span><h3>Board book</h3><p class="muted">24 pages &middot; Ten colours, up to 2 pictures each</p><p class="amt">€39</p><a class="btn red" href="create.html?book=colours&amp;edition=classic">Choose Board book</a></div><div class="edition"><h3>Extra copy</h3><p class="muted">Same book &middot; Ordered with your book</p><p class="amt">€25 <small>each</small></p><a class="btn ghost" href="create.html?book=colours">Add when you order</a></div></div>
+<div class="editions"><div class="edition featured"><span class="badge">Most popular</span><h3>Board book</h3><p class="muted">24 pages &middot; Ten colours, up to 2 pictures each</p><p class="amt"><span class="money" data-eur="39">€39</span></p><a class="btn red" href="create.html?book=colours&amp;edition=classic">Choose Board book</a></div><div class="edition"><h3>Extra copy</h3><p class="muted">Same book &middot; Ordered with your book</p><p class="amt"><span class="money" data-eur="25">€25</span> <small>each</small></p><a class="btn ghost" href="create.html?book=colours">Add when you order</a></div></div>
 <div class="opts">
 <div class="opt"><h3>Four art styles</h3><p>Paint Splash, Watercolour, Comic Pop or Storybook. You choose when you start.</p></div>
-<div class="opt"><h3>Bilingual edition +€6</h3><p>Two languages on every page, from English, Spanish, Catalan, French, German, Italian, Portuguese and Dutch.</p></div>
-<div class="opt"><h3>Gift box +€5</h3><p>A keepsake box with a ribbon, ready to give to grandparents.</p></div>
+<div class="opt"><h3>Bilingual edition +<span class="money" data-eur="6">€6</span></h3><p>Two languages on every page, from English, Spanish, Catalan, French, German, Italian, Portuguese and Dutch.</p></div>
+<div class="opt"><h3>Gift box +<span class="money" data-eur="5">€5</span></h3><p>A keepsake box with a ribbon, ready to give to grandparents.</p></div>
 </div></div></section>
 
 <section class="section" style="padding-top:0"><div class="wrap">
@@ -67,6 +69,7 @@
 <p class="small">&copy; <span data-year>2026</span> Family Board Books &middot; familyboardbooks.com</p></div>
 </div></footer>
 <script src="assets/js/data.js"></script>
+<script src="assets/js/region.js"></script>
 <script src="assets/js/art.js"></script>
 <script src="assets/js/site.js"></script>
 <script>document.querySelectorAll('[data-glyph]').forEach(function(el){el.innerHTML=FBB.glyph(el.dataset.glyph);});</script>

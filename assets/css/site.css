@@ -359,3 +359,13 @@ main { overflow-x: clip; }
 .seg { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 999px; background: var(--surface-2); margin-bottom: 8px; }
 .seg button { font: 700 14px/1 var(--body); padding: 10px 14px; border-radius: 999px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+
+/* Shipping region selector (Europe / UK) */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.region { display: inline-flex; flex: none; }
+.region-select { appearance: none; -webkit-appearance: none; font: 600 14px/1 var(--body, inherit); color: var(--text); background: var(--card, var(--bg)) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center; border: 1px solid var(--line); border-radius: 999px; padding: 9px 28px 9px 12px; cursor: pointer; }
+.region-select:hover { border-color: var(--muted); }
+.region-select:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
+.region-bar { margin: 0; padding: 9px 16px; text-align: center; font-size: 14px; font-weight: 600; background: color-mix(in srgb, var(--sky) 16%, var(--bg)); border-bottom: 1px solid var(--line); }
+@media (max-width: 820px) { .region { margin-left: auto; } .site-head .region + .btn { margin-left: 0; } .site-head .wrap { gap: 10px; } }
+@media (max-width: 420px) { .region-select { padding: 8px 24px 8px 10px; font-size: 13px; background-position: right 8px center; } }

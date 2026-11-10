@@ -21,8 +21,10 @@
 <header class="site-head"><div class="wrap">
 <a class="logo" href="index.html" aria-label="Family Board Books home"><span class="logo-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Family Board Books</a>
 <nav class="nav" aria-label="Main"><a href="index.html#books" aria-current="page">Books</a><a href="index.html#how">How it works</a><a href="index.html#pricing">Pricing</a><a href="index.html#faq">FAQ</a></nav>
+<label class="region"><span class="sr-only">Deliver to</span><select class="region-select" aria-label="Deliver to"><option value="eu">EU · €</option><option value="uk">UK · £</option></select></label>
 <a class="btn btn-sm red" href="create.html">Start your book</a>
 </div></header>
+<p class="region-bar" id="region-bar" role="status" hidden></p>
 <main>
 
 <section class="hero"><div class="wrap hero-grid">
@@ -59,18 +61,18 @@
 <div class="why-item"><h3>Made for little hands</h3><p>Thick board pages with rounded corners survive chewing, dropping and a hundred bedtimes.</p></div>
 <div class="why-item"><h3>The whole family</h3><p>Not just your child. Grandparents, cousins, friends, pets and favourite places all get a page.</p></div>
 <div class="why-item"><h3>Any language, or two</h3><p>Choose from eight languages, or a bilingual edition for families who speak more than one.</p></div>
-<div class="why-item"><h3>Copies for grandparents</h3><p>Add extra copies of the same book from €25, so faraway family can read along.</p></div>
+<div class="why-item"><h3>Copies for grandparents</h3><p>Add extra copies of the same book from <span class="money" data-eur="25">€25</span>, so faraway family can read along.</p></div>
 </div></div></section>
 
 <section id="pricing" class="section" style="padding-top:0"><div class="wrap">
 <div class="sec-head"><p class="eyebrow">Pricing</p><h2>Launch prices</h2><p class="lede">Every book includes the cartoon portraits, a dedication page and a cover with your child's name.</p></div>
 <div class="table-wrap"><table><thead><tr><th>Book</th><th>Pages</th><th>From</th><th>Extra copy</th><th>Ages</th></tr></thead><tbody id="price-rows"></tbody></table></div>
-<p class="note">Bilingual edition +€6. Gift box +€5. Shipping is shown at checkout.</p>
+<p class="note">Bilingual edition +<span class="money" data-eur="6">€6</span>. Gift box +<span class="money" data-eur="5">€5</span>. Shipping is shown at checkout.</p>
 </div></section>
 
 <section id="faq" class="section" style="padding-top:0"><div class="wrap">
 <div class="sec-head"><p class="eyebrow">Questions</p><h2>Good to know</h2></div>
-<div class="faq"><details><summary>How do the cartoon portraits work?</summary><p>You upload ordinary family photos. We turn each one into a cartoon in the style you choose, place it on its page, and send you a full preview to approve before anything is printed.</p></details><details id="faq-privacy"><summary>What happens to my photos?</summary><p>Your photos are used only to make your book, and nobody at Family Board Books looks at them unless you ask us for help. Your original photos are deleted once your book is printed. The cartoons and print file are deleted 30 days after delivery, unless you choose to keep them in your account for reorders; you can delete them there at any time. We never use your photos for advertising or to train anything.</p></details><details><summary>Can I see the book before it is printed?</summary><p>Yes. You see every page on screen and can swap photos, names or words. Nothing is printed until you approve it.</p></details><details><summary>Which languages can I choose?</summary><p>English, Spanish, Catalan, French, German, Italian, Portuguese and Dutch. A bilingual edition puts two languages on every page, which is lovely for families who speak more than one at home.</p></details><details><summary>What age are the books for?</summary><p>Babies and toddlers from birth to about four. The pages are thick board with rounded corners, made to be chewed, dropped and read again and again.</p></details><details><summary>Can we include characters from TV, like Bluey?</summary><p>We can&#x27;t print TV or film characters, because they belong to their creators. You can include your child&#x27;s own toys and teddies, and they often become the favourite page.</p></details><details><summary>How long does delivery take?</summary><p>We will confirm delivery times when ordering opens. Join the list and founding families will hear first.</p></details></div></div></section>
+<div class="faq"><details><summary>How do the cartoon portraits work?</summary><p>You upload ordinary family photos. We turn each one into a cartoon in the style you choose, place it on its page, and send you a full preview to approve before anything is printed.</p></details><details id="faq-privacy"><summary>What happens to my photos?</summary><p>Your photos are used only to make your book, and nobody at Family Board Books looks at them unless you ask us for help. Your original photos are deleted once your book is printed. The cartoons and print file are deleted 30 days after delivery, unless you choose to keep them in your account for reorders; you can delete them there at any time. We never use your photos for advertising or to train anything.</p></details><details><summary>Can I see the book before it is printed?</summary><p>Yes. You see every page on screen and can swap photos, names or words. Nothing is printed until you approve it.</p></details><details><summary>Which languages can I choose?</summary><p>English, Spanish, Catalan, French, German, Italian, Portuguese and Dutch. A bilingual edition puts two languages on every page, which is lovely for families who speak more than one at home.</p></details><details><summary>What age are the books for?</summary><p>Babies and toddlers from birth to about four. The pages are thick board with rounded corners, made to be chewed, dropped and read again and again.</p></details><details><summary>Can we include characters from TV, like Bluey?</summary><p>We can&#x27;t print TV or film characters, because they belong to their creators. You can include your child&#x27;s own toys and teddies, and they often become the favourite page.</p></details><details><summary>Where do you deliver?</summary><p>We deliver to Spain and the rest of the European Union, with prices in euros. UK delivery is coming soon: choose UK · £ at the top of the page to see prices in pounds and reserve your book. Your UK book will be printed in the UK, so there are no customs charges.</p></details><details><summary>How long does delivery take?</summary><p>We will confirm delivery times when ordering opens. Join the list and founding families will hear first.</p></details></div></div></section>
 
 <section class="section" style="padding-top:0"><div class="wrap">
 <div class="band" id="join">
@@ -90,6 +92,7 @@
 <p class="small">&copy; <span data-year>2026</span> Family Board Books &middot; familyboardbooks.com</p></div>
 </div></footer>
 <script src="assets/js/data.js"></script>
+<script src="assets/js/region.js"></script>
 <script src="assets/js/art.js"></script>
 <script src="assets/js/site.js"></script>
 

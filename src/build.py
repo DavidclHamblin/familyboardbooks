@@ -17,6 +17,12 @@ data = json.loads(subprocess.check_output(["node", "-e", """
 global.window = {}; require(process.argv[1]); console.log(JSON.stringify(window.FBB));
 """, str(ROOT / "assets/js/data.js")]))
 BOOKS, ORDER, CUR = data["books"], data["order"], data["config"]["currency"]
+REGIONS = data["regions"]
+
+
+def money(eur):
+    """A euro price that region.js swaps to pounds for UK visitors."""
+    return f'<span class="money" data-eur="{eur}">{CUR}{eur}</span>'
 
 FONTS = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Figtree:wght@400;500;600;700&family=Oswald:wght@600&display=swap"
 
@@ -45,8 +51,10 @@ def header(active=""):
     return f"""<header class="site-head"><div class="wrap">
 <a class="logo" href="index.html" aria-label="Family Board Books home"><span class="logo-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Family Board Books</a>
 <nav class="nav" aria-label="Main">{a("index.html#books", "Books", "books")}{a("index.html#how", "How it works", "how")}{a("index.html#pricing", "Pricing", "pricing")}{a("index.html#faq", "FAQ", "faq")}</nav>
+<label class="region"><span class="sr-only">Deliver to</span><select class="region-select" aria-label="Deliver to">{''.join(f'<option value="{k}">{e(r["label"])}</option>' for k, r in REGIONS.items())}</select></label>
 <a class="btn btn-sm red" href="create.html">Start your book</a>
-</div></header>"""
+</div></header>
+<p class="region-bar" id="region-bar" role="status" hidden></p>"""
 
 
 def footer():
@@ -60,7 +68,7 @@ def footer():
 </div></footer>"""
 
 
-SCRIPTS = '<script src="assets/js/data.js"></script>\n<script src="assets/js/art.js"></script>\n<script src="assets/js/site.js"></script>'
+SCRIPTS = '<script src="assets/js/data.js"></script>\n<script src="assets/js/region.js"></script>\n<script src="assets/js/art.js"></script>\n<script src="assets/js/site.js"></script>'
 
 
 def page(title, desc, path, body, active="", extra_js=""):
@@ -92,6 +100,7 @@ def home():
         ("Which languages can I choose?", "English, Spanish, Catalan, French, German, Italian, Portuguese and Dutch. A bilingual edition puts two languages on every page, which is lovely for families who speak more than one at home."),
         ("What age are the books for?", "Babies and toddlers from birth to about four. The pages are thick board with rounded corners, made to be chewed, dropped and read again and again."),
         ("Can we include characters from TV, like Bluey?", "We can't print TV or film characters, because they belong to their creators. You can include your child's own toys and teddies, and they often become the favourite page."),
+        ("Where do you deliver?", "We deliver to Spain and the rest of the European Union, with prices in euros. UK delivery is coming soon: choose UK · £ at the top of the page to see prices in pounds and reserve your book. Your UK book will be printed in the UK, so there are no customs charges."),
         ("How long does delivery take?", "We will confirm delivery times when ordering opens. Join the list and founding families will hear first."),
     ]
     faq_html = "".join(
@@ -132,13 +141,13 @@ def home():
 <div class="why-item"><h3>Made for little hands</h3><p>Thick board pages with rounded corners survive chewing, dropping and a hundred bedtimes.</p></div>
 <div class="why-item"><h3>The whole family</h3><p>Not just your child. Grandparents, cousins, friends, pets and favourite places all get a page.</p></div>
 <div class="why-item"><h3>Any language, or two</h3><p>Choose from eight languages, or a bilingual edition for families who speak more than one.</p></div>
-<div class="why-item"><h3>Copies for grandparents</h3><p>Add extra copies of the same book from {CUR}25, so faraway family can read along.</p></div>
+<div class="why-item"><h3>Copies for grandparents</h3><p>Add extra copies of the same book from {money(25)}, so faraway family can read along.</p></div>
 </div></div></section>
 
 <section id="pricing" class="section" style="padding-top:0"><div class="wrap">
 <div class="sec-head"><p class="eyebrow">Pricing</p><h2>Launch prices</h2><p class="lede">Every book includes the cartoon portraits, a dedication page and a cover with your child's name.</p></div>
 <div class="table-wrap"><table><thead><tr><th>Book</th><th>Pages</th><th>From</th><th>Extra copy</th><th>Ages</th></tr></thead><tbody id="price-rows"></tbody></table></div>
-<p class="note">Bilingual edition +{CUR}6. Gift box +{CUR}5. Shipping is shown at checkout.</p>
+<p class="note">Bilingual edition +{money(6)}. Gift box +{money(5)}. Shipping is shown at checkout.</p>
 </div></section>
 
 <section id="faq" class="section" style="padding-top:0"><div class="wrap">
@@ -169,7 +178,7 @@ def book(k):
             cta = f'<a class="btn ghost" href="create.html?book={k}">Add when you order</a>'
         else:
             cta = f'<a class="btn{" red" if feat else ""}" href="create.html?book={k}&amp;edition={ed["id"]}">Choose {e(ed["name"])}</a>'
-        eds += f"""<div class="edition{feat}">{badge}<h3>{e(ed["name"])}</h3><p class="muted">{e(ed["pages"])} &middot; {e(ed["detail"])}</p><p class="amt">{CUR}{ed["price"]}{" <small>each</small>" if ed.get("isCopy") else ""}</p>{cta}</div>"""
+        eds += f"""<div class="edition{feat}">{badge}<h3>{e(ed["name"])}</h3><p class="muted">{e(ed["pages"])} &middot; {e(ed["detail"])}</p><p class="amt">{money(ed["price"])}{" <small>each</small>" if ed.get("isCopy") else ""}</p>{cta}</div>"""
     others = "".join(
         f'<a class="tcard t-{BOOKS[o]["color"]}" href="{BOOKS[o]["slug"]}.html"><div class="glyph" data-glyph="{BOOKS[o]["glyph"]}"></div><h3>{e(BOOKS[o]["short"])}</h3><p>{e(BOOKS[o]["tagline"])}</p></a>'
         for o in ORDER if o != k)
@@ -179,7 +188,7 @@ def book(k):
 <div class="bhero-copy">
 <h1>{e(b["name"])}</h1>
 <p class="lede">{e(b["blurb"])}</p>
-<div class="bhero-meta"><span class="chip">Ages {e(b["ages"])}</span><span class="chip">From {CUR}{min(x["price"] for x in b["editions"] if not x.get("isCopy"))}</span><span class="chip">Thick board pages</span></div>
+<div class="bhero-meta"><span class="chip">Ages {e(b["ages"])}</span><span class="chip">From {money(min(x["price"] for x in b["editions"] if not x.get("isCopy")))}</span><span class="chip">Thick board pages</span></div>
 <div class="hero-cta"><a class="btn red" href="create.html?book={k}">Start your {e(b["short"]) if k != "family" else "family"} book</a><a class="btn ghost" href="#editions">See prices</a></div>
 </div>
 <div class="stack" data-samples="{k}" data-max="2" data-style="splash"></div>
@@ -199,8 +208,8 @@ def book(k):
 <div class="editions">{eds}</div>
 <div class="opts">
 <div class="opt"><h3>Four art styles</h3><p>Paint Splash, Watercolour, Comic Pop or Storybook. You choose when you start.</p></div>
-<div class="opt"><h3>Bilingual edition +{CUR}6</h3><p>Two languages on every page, from English, Spanish, Catalan, French, German, Italian, Portuguese and Dutch.</p></div>
-<div class="opt"><h3>Gift box +{CUR}5</h3><p>A keepsake box with a ribbon, ready to give to grandparents.</p></div>
+<div class="opt"><h3>Bilingual edition +{money(6)}</h3><p>Two languages on every page, from English, Spanish, Catalan, French, German, Italian, Portuguese and Dutch.</p></div>
+<div class="opt"><h3>Gift box +{money(5)}</h3><p>A keepsake box with a ribbon, ready to give to grandparents.</p></div>
 </div></div></section>
 
 <section class="section" style="padding-top:0"><div class="wrap">

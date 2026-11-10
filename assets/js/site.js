@@ -1,7 +1,7 @@
 /* Family Board Books: shared page behaviour (theme shelf, style demo, sample pages, sign-up forms). */
 (function () {
   "use strict";
-  var F = window.FBB, cur = F.config.currency;
+  var F = window.FBB;
   function $(s, r) { return (r || document).querySelector(s); }
   function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
   function minPrice(b) { return Math.min.apply(null, b.editions.filter(function (e) { return !e.isCopy; }).map(function (e) { return e.price; })); }
@@ -20,7 +20,7 @@
   if (shelf) {
     var html = F.order.map(function (k) {
       var b = F.books[k];
-      return '<a class="tcard t-' + b.color + '" href="' + b.slug + '.html"><div class="glyph">' + F.glyph(b.glyph) + "</div><h3>" + F.esc(b.short === "ABC" ? "ABC" : b.short) + "</h3><p>" + F.esc(b.tagline) + '</p><div class="from"><span>From ' + cur + minPrice(b) + '</span><span aria-hidden="true">→</span></div></a>';
+      return '<a class="tcard t-' + b.color + '" href="' + b.slug + '.html"><div class="glyph">' + F.glyph(b.glyph) + "</div><h3>" + F.esc(b.short === "ABC" ? "ABC" : b.short) + "</h3><p>" + F.esc(b.tagline) + '</p><div class="from"><span>From ' + F.money(minPrice(b)) + '</span><span aria-hidden="true">→</span></div></a>';
     }).join("");
     html += F.comingSoon.map(function (s) {
       return '<div class="tcard soon" aria-label="' + F.esc(s.name) + ', coming soon"><span class="tag">Coming soon</span><div class="glyph">' + F.glyph(s.glyph) + "</div><h3>" + F.esc(s.name) + "</h3><p>" + F.esc(s.line) + '</p><div class="from"><span>Join the waitlist</span></div></div>';
@@ -67,7 +67,7 @@
   if (pt) {
     pt.innerHTML = F.order.map(function (k) {
       var b = F.books[k], main = b.editions.filter(function (e) { return !e.isCopy; }), copy = b.editions.filter(function (e) { return e.isCopy; })[0];
-      return '<tr><td><a href="' + b.slug + '.html"><span class="dot" style="--dc:var(--' + b.color + ')"></span>' + F.esc(b.name) + "</a></td><td>" + main.map(function (e) { return F.esc(e.pages); }).join(" or ") + '</td><td class="price">' + cur + minPrice(b) + "</td><td>" + (copy ? cur + copy.price : "") + "</td><td>" + F.esc(b.ages) + "</td></tr>";
+      return '<tr><td><a href="' + b.slug + '.html"><span class="dot" style="--dc:var(--' + b.color + ')"></span>' + F.esc(b.name) + "</a></td><td>" + main.map(function (e) { return F.esc(e.pages); }).join(" or ") + '</td><td class="price">' + F.money(minPrice(b)) + "</td><td>" + (copy ? F.money(copy.price) : "") + "</td><td>" + F.esc(b.ages) + "</td></tr>";
     }).join("");
   }
 
@@ -91,7 +91,8 @@
     var body = Object.assign({
       _subject: data.form === "reservation" ? "New book reservation: " + (data.book || "") : "New waitlist sign-up",
       _template: "table",
-      _replyto: data.email
+      _replyto: data.email,
+      region: F.regionInfo ? F.regionInfo().name : ""
     }, data);
     return fetch(F.config.formEndpoint, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(body) })
       .then(function (r) { return r.ok ? r.json().then(function (j) { return String(j.success) === "true"; }, function () { return true; }) : false; })

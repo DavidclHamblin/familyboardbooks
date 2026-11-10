@@ -11,7 +11,9 @@
 
   F.shop.enabled = function () {
     if (!S.domain || !S.token) return false;
-    return !!S.checkoutLive || /shoptest/.test(location.hash);
+    if (/shoptest/.test(location.hash)) return true;
+    // Checkout must be live overall and open for the visitor's region (the UK opens later).
+    return !!S.checkoutLive && !!(F.regionInfo && F.regionInfo().ordering);
   };
 
   function gql(query, variables) {
@@ -44,6 +46,13 @@
     });
   }
 
+  // UK carts are created for Great Britain so Shopify checks out in pounds with UK shipping.
+  function cartInput(lines) {
+    var r = F.regionInfo ? F.regionInfo() : {}, input = { lines: lines, attributes: attrs({ Source: "familyboardbooks.com creator", Region: r.name || "" }) };
+    if (r.country) input.buyerIdentity = { countryCode: r.country };
+    return input;
+  }
+
   /* order = { book, edition, copies, bilingual, giftbox, details:{...visible}, hidden:{...} }
      Resolves with Shopify's checkout URL. */
   F.shop.checkout = function (order) {
@@ -61,7 +70,7 @@
       if (order.bilingual) lines.push({ merchandiseId: maps[1]["FBB-ADDON-BILINGUAL"], quantity: 1, attributes: attrs({ "For": order.details["Cover title"] }) });
       if (order.giftbox) lines.push({ merchandiseId: maps[2]["FBB-ADDON-GIFTBOX"], quantity: 1, attributes: attrs({ "For": order.details["Cover title"] }) });
       return gql("mutation($input:CartInput!){cartCreate(input:$input){cart{checkoutUrl} userErrors{message}}}", {
-        input: { lines: lines, attributes: attrs({ Source: "familyboardbooks.com creator" }) }
+        input: cartInput(lines)
       });
     }).then(function (d) {
       var res = d.cartCreate;
