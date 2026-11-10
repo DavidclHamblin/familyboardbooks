@@ -137,7 +137,7 @@ async function styleRefs(env, style) {
   let list = await env.BUCKET.list({ prefix: "styles/" + style + "/" });
   if (!list.objects.length && style === "painted") list = await env.BUCKET.list({ prefix: "styles/splash/" });
   const out = [];
-  for (const o of list.objects.slice(0, 2)) {
+  for (const o of list.objects.filter(x => x.size > 1000 && /\.(png|jpe?g|webp)$/i.test(x.key)).slice(0, 2)) {
     const obj = await env.BUCKET.get(o.key);
     if (obj) out.push({ bytes: await obj.arrayBuffer(), type: obj.httpMetadata?.contentType || "image/png" });
   }
