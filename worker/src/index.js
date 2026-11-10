@@ -31,11 +31,15 @@ const STYLE_PROMPTS = {
 // "Painted Splash" uses the same brief; the difference comes from the model it is sent to (see STYLE_ENGINES).
 STYLE_PROMPTS.painted = STYLE_PROMPTS.splash;
 
-function prompt(style) {
-  return "Turn the person or people in the FIRST image into a cartoon portrait for a children's board book, in " +
-    (STYLE_PROMPTS[style] || STYLE_PROMPTS.splash) +
-    ", on a plain white background. If more images follow, they are style references: match their art style closely. " +
-    "Keep every person clearly recognisable: same face shape, features, skin tone, hair, glasses and clothes, same number of people, same pose. " +
+function prompt(style, refCount) {
+  const refs = refCount
+    ? "IMAGE 1 is the customer's photo. The other " + refCount + " image(s) are ART STYLE examples only: copy their drawing style, colours and paint-splash background, " +
+      "but NEVER copy their people, faces, bodies, clothes or poses. Every person you draw must come from IMAGE 1, and only from IMAGE 1. "
+    : "";
+  return refs + "Turn the person or people in IMAGE 1 into a cartoon portrait for a children's board book, in " +
+    (STYLE_PROMPTS[style] || STYLE_PROMPTS.splash) + ", on a plain white background. " +
+    "Keep every person from IMAGE 1 clearly recognisable: same face shape, features, skin tone, hair, glasses and clothes, same number of people, same pose. " +
+    "If IMAGE 1 is a drawing, a pet or a toy, redraw that in the style instead. Never add people who are not in IMAGE 1. " +
     "Friendly and warm, suitable for babies and toddlers. No text, letters, logos or captions.";
 }
 
@@ -148,7 +152,7 @@ async function gemini(env, photo, refs, style) {
   const model = env.GEMINI_MODEL || "gemini-3.1-flash-image";
   const parts = [{ inline_data: { mime_type: photo.type, data: b64(photo.bytes) } }]
     .concat(refs.map(r => ({ inline_data: { mime_type: r.type, data: b64(r.bytes) } })))
-    .concat([{ text: prompt(style) }]);
+    .concat([{ text: prompt(style, refs.length) }]);
   const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent", {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
@@ -166,7 +170,7 @@ async function gemini(env, photo, refs, style) {
 async function openai(env, photo, refs, style) {
   const fd = new FormData();
   fd.append("model", env.OPENAI_MODEL || "gpt-image-2");
-  fd.append("prompt", prompt(style));
+  fd.append("prompt", prompt(style, refs.length));
   fd.append("size", "1024x1024");
   fd.append("quality", env.OPENAI_QUALITY || "medium");
   fd.append("image[]", new Blob([photo.bytes], { type: photo.type }), "photo.jpg");
