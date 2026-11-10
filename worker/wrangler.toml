@@ -3,6 +3,9 @@
 name = "familyboardbooks-api"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
+# Public address: https://familyboardbooks-api.silent-forest-c98a.workers.dev
+workers_dev = true
+preview_urls = false
 
 # Private photo storage, kept in Cloudflare's EU jurisdiction.
 [[r2_buckets]]

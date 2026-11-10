@@ -1,5 +1,8 @@
 # Photo and cartoon service
 
+Live at https://familyboardbooks-api.silent-forest-c98a.workers.dev (Cloudflare account: David@familyboardbooks.com).
+Cloudflare deploys it automatically from the `worker/` folder whenever `main` changes on GitHub.
+
 A Cloudflare Worker with private R2 storage in the EU. It stores customers' photos, turns them into
 cartoons with an AI image model, runs the free two-page preview, unlocks the full book when Shopify
 says an order is paid, and deletes everything on schedule.
