@@ -386,3 +386,5 @@ main { overflow-x: clip; }
 .proof-grid { display: grid; gap: 22px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
 .proof-page { margin: 0; display: grid; gap: 10px; }
 .proof-page figcaption { font-weight: 700; display: grid; gap: 6px; }
+.portrait.toon.cover-photo { object-fit: cover; border-radius: 18%; }
+.cover-form .seg { margin-top: 10px; }

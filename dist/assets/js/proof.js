@@ -21,7 +21,8 @@
     });
   }
 
-  function slotsWithPhotos() { return st.photos.concat(st.cartoons).filter(function (s, i, a) { return a.indexOf(s) === i; }); }
+  function asPhoto(slot) { var cv = st.cover || {}; return (slot === "cover-front" && cv.frontCartoon === false) || (slot === "cover-back" && cv.backCartoon === false); }
+  function slotsWithPhotos() { return st.photos.concat(st.cartoons).filter(function (s, i, a) { return a.indexOf(s) === i && !asPhoto(s); }); }
 
   function enqueueMissing() {
     if (!st.paid) return;
@@ -66,6 +67,11 @@
     var cv = st.cover || {}, out = "";
     ["front", "back"].forEach(function (side) {
       var slot = "cover-" + side; if (!cv[side]) return;
+      if (asPhoto(slot)) {
+        out += '<figure class="proof-page">' + F.bookPage({ heading: side === "front" ? cv.title || "" : "", color: cv.color, style: st.style, items: [{ empty: true, t: side === "back" ? cv.backMessage : "" }] }) +
+          "<figcaption>" + (side === "front" ? "Front cover" : "Back cover") + '<span class="hint">Printed as your photo, not a cartoon.</span></figcaption></figure>';
+        return;
+      }
       out += '<figure class="proof-page">' + F.bookPage({ heading: side === "front" ? cv.title || "" : "", color: cv.color, style: st.style, items: [portraitItem(slot, side === "back" ? cv.backMessage : "")] }) +
         "<figcaption>" + (side === "front" ? "Front cover" : "Back cover") + '<div class="slot-actions">' + controls(slot) + "</div></figcaption></figure>";
     });

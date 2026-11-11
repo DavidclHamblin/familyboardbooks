@@ -53,16 +53,16 @@
   var q = params();
   var state = {
     step: 0, book: F.books[q.book] ? q.book : "abc", edition: q.edition || "", style: "splash",
-    language: "English", language2: "Español", bilingual: false, giftbox: false, copies: 0,
+    language: "English", language2: "", bilingual: false, giftbox: false, copies: 0,
     current: 0, child: "Amara", dedication: "For Amara, with love from all of us.", pages: null, done: false,
     cover: { color: "", frontPhoto: "", backMode: "photo", backPhoto: "", backMessage: "Made with love for Amara" }
   };
   function storeKey() { return "fbb-draft-" + state.book; }
   function save() {
     try {
-      var slim = JSON.parse(JSON.stringify(state, function (k, v) { return k === "file" || k === "frontFile" || k === "backFile" || k === "busy" || k === "toonErr" ? undefined : v; }));
+      var slim = JSON.parse(JSON.stringify(state, function (k, v) { return /^(file|frontFile|backFile|busy|toonErr|frontBusy|backBusy|frontErr|backErr)$/.test(k) ? undefined : v; }));
       (slim.pages || []).forEach(function (p) { p.items.forEach(function (it) { it.photo = ""; it.toon = ""; }); });
-      slim.cover.frontPhoto = ""; slim.cover.backPhoto = ""; slim.toonInfo = null;
+      slim.cover.frontPhoto = ""; slim.cover.backPhoto = ""; slim.cover.frontToon = ""; slim.cover.backToon = ""; slim.toonInfo = null;
       localStorage.setItem(storeKey(), JSON.stringify(slim));
     } catch (e) { /* storage unavailable: the draft just won't be remembered */ }
   }
@@ -114,12 +114,13 @@
     }).join("");
     var pl = priceLines();
     var langs = F.languages.map(function (l) { return "<option" + (l === state.language ? " selected" : "") + ">" + esc(l) + "</option>"; }).join("");
-    var langs2 = F.languages.map(function (l) { return "<option" + (l === state.language2 ? " selected" : "") + ">" + esc(l) + "</option>"; }).join("");
+    var langs2 = '<option value=""' + (state.language2 ? "" : " selected") + ">No second language</option>" +
+      F.languages.filter(function (l) { return l !== state.language; }).map(function (l) { return "<option" + (l === state.language2 ? " selected" : "") + ">" + esc(l) + "</option>"; }).join("");
     return '<section class="panel"><h2>Which book are you making?</h2><div class="choice-grid">' + books + "</div>" +
       "<h3>Edition</h3><div class=\"choice-grid\">" + eds + "</div>" +
       '<div class="row2"><div class="field"><label for="c-lang">Language</label><select id="c-lang" data-k="language">' + langs + "</select></div>" +
-      '<div class="field"' + (state.bilingual ? "" : " hidden") + '><label for="c-lang2">Second language</label><select id="c-lang2" data-k="language2">' + langs2 + "</select></div></div>" +
-      '<label class="check"><input type="checkbox" id="c-bi" data-k="bilingual"' + (state.bilingual ? " checked" : "") + "><span>" + esc(F.addons.bilingual.name) + "</span><strong>+" + F.money(F.addons.bilingual.price) + "</strong></label>" +
+      '<div class="field"><label for="c-lang2">Second language <span class="hint">(optional, +' + F.money(F.addons.bilingual.price) + ")</span></label><select id=\"c-lang2\" data-k=\"language2\">" + langs2 + "</select></div></div>" +
+      (state.bilingual ? '<p class="hint">Every page shows both ' + esc(state.language) + " and " + esc(state.language2) + ".</p>" : "") +
       '<label class="check"><input type="checkbox" id="c-gift" data-k="giftbox"' + (state.giftbox ? " checked" : "") + "><span>" + esc(F.addons.giftbox.name) + "</span><strong>+" + F.money(F.addons.giftbox.price) + "</strong></label>" +
       '<div class="check" style="cursor:default"><span>Extra copies for grandparents and godparents (' + cur + pl.copyPrice + ' each)</span><span class="qty"><button type="button" data-copies="-1" aria-label="One fewer copy">&minus;</button><output id="c-copies">' + state.copies + '</output><button type="button" data-copies="1" aria-label="One more copy">+</button></span></div>' +
       navButtons(false, "Next: choose a style") + "</section>";
@@ -230,6 +231,11 @@
         var it = state.pages[+m[1]] && state.pages[+m[1]].items[+m[2]]; if (!it) return null;
         return F.toons.image(d, slot).then(function (url) { it.toon = url; it.up = true; });
       }).filter(Boolean);
+      ["front", "back"].forEach(function (side) {
+        var slot = "cover-" + side;
+        if ((j.photos || []).indexOf(slot) >= 0) state.cover[side + "Up"] = true;
+        if ((j.cartoons || []).indexOf(slot) >= 0) jobs.push(F.toons.image(d, slot).then(function (url) { state.cover[side + "Toon"] = url; state.cover[side + "Up"] = true; }));
+      });
       (j.photos || []).forEach(function (slot) { var m = /^p(\d+)-(\d+)$/.exec(slot); var it = m && state.pages[+m[1]] && state.pages[+m[1]].items[+m[2]]; if (it) it.up = true; });
       return Promise.all(jobs).then(function () { render(); });
     }).catch(function (e) { if (e.status === 403 || e.status === 404) F.toons.forget(book); });
@@ -241,7 +247,7 @@
     state.pages.forEach(function (p, pi) { p.items.forEach(function (it, ii) { if (it.file && !it.up) jobs.push({ slot: "p" + pi + "-" + ii, file: it.file, done: function () { it.up = true; } }); }); });
     ["front", "back"].forEach(function (side) {
       var f = state.cover[side + "File"];
-      if (f && !(side === "back" && state.cover.backMode !== "photo")) jobs.push({ slot: "cover-" + side, file: f, done: function () {} });
+      if (f && !state.cover[side + "Up"] && !(side === "back" && state.cover.backMode !== "photo")) jobs.push({ slot: "cover-" + side, file: f, done: function () { state.cover[side + "Up"] = true; } });
     });
     return F.toons.draft(state.book, state.style, true).then(function (d) {
       var n = 0;
@@ -259,7 +265,8 @@
               items: p.items.map(function (it, ii) { return { t: it.example ? "" : it.text || "", slot: it.file || it.up ? "p" + pi + "-" + ii : null }; }) };
           }),
           cover: { title: coverTitle(), color: coverColour(), backMode: state.cover.backMode, backMessage: state.cover.backMessage,
-            front: !!state.cover.frontFile, back: !!state.cover.backFile && state.cover.backMode === "photo" }
+            front: !!(state.cover.frontFile || state.cover.frontUp), back: !!(state.cover.backFile || state.cover.backUp) && state.cover.backMode === "photo",
+            frontCartoon: state.cover.frontPic !== "photo", backCartoon: state.cover.backPic !== "photo" }
         });
       }).then(function () { return d; });
     });
@@ -268,15 +275,59 @@
   function coverColour() { return state.cover.color || F.books[state.book].color; }
 
   /* coverHTML("front" | "back") -> a board book cover, front or back */
+  // Cover pictures: drawn as a cartoon (default) or printed as the original photo.
+  function coverArt(side, accent, fallback) {
+    var cv = state.cover, photo = cv[side + "Photo"], toon = cv[side + "Toon"];
+    if (cv[side + "Pic"] === "photo" && photo) return '<img class="portrait toon cover-photo" src="' + photo + '" alt="Your photo">';
+    if (toon) return '<img class="portrait toon" src="' + toon + '" alt="Cartoon portrait">';
+    if (photo) return F.photoPortrait(photo, state.style, accent, side);
+    return F.portrait(fallback, state.style, accent, side === "front" ? "cover" : "back");
+  }
+  function coverChoice(side) {
+    var cv = state.cover; if (!cv[side + "Photo"] && !cv[side + "Toon"]) return "";
+    var mode = cv[side + "Pic"] === "photo" ? "photo" : "cartoon";
+    var out = '<div class="seg" role="group" aria-label="' + (side === "front" ? "Front" : "Back") + ' picture"><button type="button" data-cover-mode="' + side + ':cartoon" aria-pressed="' + (mode === "cartoon") + '">Turn into a cartoon</button><button type="button" data-cover-mode="' + side + ':photo" aria-pressed="' + (mode === "photo") + '">Keep as a photo</button></div>';
+    if (mode === "cartoon" && F.toons.enabled()) {
+      var info = toonInfo();
+      if (cv[side + "Busy"]) out += '<span class="toon-status busy" role="status">Drawing your cartoon… about 20 seconds</span>';
+      else {
+        if (cv[side + "Err"]) out += '<span class="toon-status" role="alert">' + esc(cv[side + "Err"]) + "</span>";
+        if (cv[side + "Toon"]) out += '<div class="slot-actions"><span class="toon-status">Cartoon ready</span>' + (cv[side + "Photo"] && (info.paid || info.redosLeft == null || info.redosLeft > 0) ? '<button type="button" class="linkish" data-cover-toon="' + side + '">Draw it again</button>' : "") + "</div>";
+        else if (!info.paid && info.freeLeft <= 0) out += '<span class="toon-status">Drawn after you order</span>';
+        else out += (state.toonConsent ? "" : '<label class="check"><input type="checkbox" id="pv-ok"><span>I have permission to use the photos of everyone shown.</span></label>') +
+          '<div class="slot-actions"><button type="button" class="btn btn-sm btn-toon" data-cover-toon="' + side + '">See it as a cartoon (free)</button></div>';
+      }
+    } else if (mode === "photo") out += '<p class="hint">We\'ll print your photo as it is, without turning it into a cartoon.</p>';
+    return out;
+  }
+  function makeCoverToon(side) {
+    var cv = state.cover, slot = "cover-" + side, box = $("#pv-ok");
+    if (!state.toonConsent && (!box || !box.checked)) { cv[side + "Err"] = "Please tick the permission box first."; render(); return; }
+    state.toonConsent = true; cv[side + "Busy"] = true; cv[side + "Err"] = ""; render();
+    var d;
+    F.toons.draft(state.book, state.style, true).then(function (dd) {
+      d = dd;
+      return cv[side + "Up"] || !cv[side + "File"] ? null : F.toons.upload(d, slot, cv[side + "File"]).then(function () { cv[side + "Up"] = true; });
+    }).then(function () { return F.toons.make(d, slot, state.style); })
+      .then(function (j) { applyInfo(j); return F.toons.image(d, slot); })
+      .then(function (url) { cv[side + "Toon"] = url; cv[side + "Busy"] = false; if (state.step === 3) render(); else save(); })
+      .catch(function (e) {
+        cv[side + "Busy"] = false; cv[side + "Err"] = e.message;
+        if (e.status === 402) state.toonInfo = Object.assign({}, toonInfo(), { freeLeft: 0, redosLeft: 0 });
+        if (e.status === 403 || e.status === 404) { F.toons.forget(state.book); cv[side + "Up"] = false; }
+        if (state.step === 3) render(); else save();
+      });
+  }
+
   function coverHTML(side) {
     var col = coverColour(), cv = state.cover, accent = col === "sun" ? "red" : "sun";
     var cls = "bcover " + side + (col === "sun" ? " light" : "");
     if (side === "front") {
-      var art = cv.frontPhoto ? F.photoPortrait(cv.frontPhoto, state.style, accent, "front") : F.portrait("girl", state.style, accent, "cover");
+      var art = coverArt("front", accent, "girl");
       return '<div class="' + cls + '" style="--cc:var(--' + col + ')"><span class="k">' + esc(F.books[state.book].name) + "</span>" + art + '<span class="t">' + esc(coverTitle()) + "</span></div>";
     }
     var body = cv.backMode === "photo"
-      ? (cv.backPhoto ? F.photoPortrait(cv.backPhoto, state.style, accent, "back") : F.portrait("granny", state.style, accent, "back"))
+      ? coverArt("back", accent, "granny")
       : '<span class="pattern" aria-hidden="true"></span>';
     return '<div class="' + cls + (cv.backMode === "pattern" ? " patterned" : "") + '" style="--cc:var(--' + col + ')">' + body +
       (cv.backMessage ? '<span class="msg">' + esc(cv.backMessage) + "</span>" : "") +
@@ -284,7 +335,7 @@
   }
 
   function coverUpload(side, label) {
-    var has = state.cover[side + "Photo"];
+    var has = state.cover[side + "Photo"] || state.cover[side + "Toon"];
     return '<div class="slot-actions"><label class="upload">' + (has ? "Change photo" : label) + '<input type="file" accept="image/*" data-cover-photo="' + side + '" aria-label="' + esc(label) + '"></label>' +
       (has ? '<button type="button" class="linkish" data-cover-clear="' + side + '">Use our illustration instead</button>' : "") + "</div>";
   }
@@ -299,9 +350,9 @@
       '<div class="cover-form">' +
       '<div class="field"><label for="c-child">Child\'s name for the cover</label><input type="text" id="c-child" data-k="child" value="' + esc(state.child) + '"></div>' +
       '<div class="field"><span class="flabel">Cover colour</span><div class="swatches" role="group" aria-label="Cover colour">' + swatches + "</div></div>" +
-      '<div class="field"><span class="flabel">Front picture</span><p class="hint">A family photo works well. We turn it into a cartoon like the other pages.</p>' + coverUpload("front", "Add front photo") + "</div>" +
+      '<div class="field"><span class="flabel">Front picture</span><p class="hint">A family photo works well. Turn it into a cartoon like the other pages, or keep it as a photo.</p>' + coverUpload("front", "Add front photo") + coverChoice("front") + "</div>" +
       '<div class="field"><span class="flabel">Back cover</span><div class="seg" role="group" aria-label="Back cover design"><button type="button" data-back-mode="photo" aria-pressed="' + (cv.backMode === "photo") + '">Photo and message</button><button type="button" data-back-mode="pattern" aria-pressed="' + (cv.backMode === "pattern") + '">Pattern and message</button></div>' +
-      (cv.backMode === "photo" ? coverUpload("back", "Add back photo") : "") + "</div>" +
+      (cv.backMode === "photo" ? coverUpload("back", "Add back photo") + coverChoice("back") : "") + "</div>" +
       '<div class="field"><label for="c-backmsg">Message on the back</label><input type="text" id="c-backmsg" data-cover-msg maxlength="80" value="' + esc(cv.backMessage) + '" placeholder="e.g. Made with love by Granny and Grandpa, Christmas 2026"></div>' +
       '<div class="field"><label for="c-ded">Dedication page (inside the front cover)</label><textarea id="c-ded" data-k="dedication">' + esc(state.dedication) + "</textarea></div>" +
       "</div></div>" + navButtons(true, "Next: reserve your book") + "</section>";
@@ -378,7 +429,13 @@
     else if (t.dataset.nav) { state.step = Math.max(0, Math.min(LAST, state.step + Number(t.dataset.nav))); render(); scrollTop(); }
     else if (t.dataset.coverColor) { state.cover.color = t.dataset.coverColor; render('[data-cover-color="' + t.dataset.coverColor + '"]'); }
     else if (t.dataset.backMode) { state.cover.backMode = t.dataset.backMode; render('[data-back-mode="' + t.dataset.backMode + '"]'); }
-    else if (t.dataset.coverClear) { state.cover[t.dataset.coverClear + "Photo"] = ""; state.cover[t.dataset.coverClear + "File"] = null; render(); }
+    else if (t.dataset.coverClear) {
+      var cs = t.dataset.coverClear, cd = F.toons.enabled() && F.toons.saved(state.book);
+      if (state.cover[cs + "Up"] && cd) F.toons.removePhoto(cd, "cover-" + cs).catch(function () {});
+      state.cover[cs + "Photo"] = ""; state.cover[cs + "File"] = null; state.cover[cs + "Toon"] = ""; state.cover[cs + "Up"] = false; state.cover[cs + "Err"] = ""; render();
+    }
+    else if (t.dataset.coverMode) { var cm = t.dataset.coverMode.split(":"); state.cover[cm[0] + "Pic"] = cm[1]; render('[data-cover-mode="' + t.dataset.coverMode + '"]'); }
+    else if (t.dataset.coverToon) { makeCoverToon(t.dataset.coverToon); }
     else if (t.dataset.book) { setBook(t.dataset.book); state.toonInfo = null; render('[data-book="' + t.dataset.book + '"]'); restoreToons(); }
     else if (t.dataset.edition) { state.edition = t.dataset.edition; render('[data-edition="' + t.dataset.edition + '"]'); }
     else if (t.dataset.style) { state.style = t.dataset.style; render('[data-style="' + t.dataset.style + '"]'); }
@@ -411,6 +468,7 @@
     if (t.dataset.coverPhoto && t.files && t.files[0]) {
       state.cover[t.dataset.coverPhoto + "Photo"] = URL.createObjectURL(t.files[0]);
       state.cover[t.dataset.coverPhoto + "File"] = t.files[0];
+      ["Toon", "Up", "Err"].forEach(function (k) { state.cover[t.dataset.coverPhoto + k] = k === "Up" ? false : ""; });
       render();
     } else if (t.dataset.photo != null && t.files && t.files[0]) {
       var it = state.pages[state.current].items[Number(t.dataset.photo)];
@@ -418,9 +476,14 @@
       it.file = t.files[0]; it.toon = ""; it.up = false; it.toonErr = "";
       if (it.example) { it.text = ""; it.example = false; }
       render();
-    } else if (t.dataset.k === "language" || t.dataset.k === "language2") { state[t.dataset.k] = t.value; renderSummary(); save(); }
+    } else if (t.dataset.k === "language" || t.dataset.k === "language2") {
+      state[t.dataset.k] = t.value;
+      if (state.language2 === state.language) state.language2 = "";
+      state.bilingual = !!state.language2;
+      render("#" + t.id);
+    }
     else if (t.id === "pv-ok") { state.toonConsent = t.checked; save(); }
-    else if (t.dataset.k === "bilingual" || t.dataset.k === "giftbox") { state[t.dataset.k] = t.checked; render("#" + t.id); }
+    else if (t.dataset.k === "giftbox") { state.giftbox = t.checked; render("#" + t.id); }
   });
 
   document.addEventListener("submit", function (e) {
@@ -433,6 +496,7 @@
       details: {
         "Cover title": coverTitle(), "Art style": styleName(),
         "Language": state.bilingual ? state.language + " + " + state.language2 : state.language,
+        "Cover pictures": (state.cover.frontPic === "photo" ? "front as photo" : "front as cartoon") + (state.cover.backMode === "photo" ? (state.cover.backPic === "photo" ? ", back as photo" : ", back as cartoon") : ", back pattern"),
         "Cover colour": coverColour(), "Back cover": state.cover.backMode === "photo" ? "Photo and message" : "Pattern and message",
         "Back message": state.cover.backMessage,
         "Keep files in account": $("#r-keep").checked ? "Yes" : "No"
