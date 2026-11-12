@@ -29,15 +29,27 @@
     slotsWithPhotos().forEach(function (s) { if (!imgs[s] && queue.indexOf(s) < 0 && !busy[s] && !errs[s]) queue.push(s); });
     run();
   }
+  // Draw up to three pictures at a time. A failed picture is retried twice, then shows "Try again";
+  // the others carry on. If the page is closed, opening the link again picks up where it stopped.
+  var active = 0, MAX = 3;
   function run() {
-    if (running || !queue.length) return;
-    running = true;
-    var s = queue.shift(); busy[s] = true; errs[s] = ""; render();
-    F.toons.make(d, s, st.style).then(function (j) { st = Object.assign(st, j); return F.toons.image(d, s); })
-      .then(function (u) { imgs[s] = u; })
-      .catch(function (e) { errs[s] = e.message; })
-      .then(function () { busy[s] = false; running = false; render(); run(); });
+    while (active < MAX && queue.length) start(queue.shift());
   }
+  function start(s) {
+    active++; busy[s] = true; errs[s] = ""; render();
+    attempt(s, 0).then(function () { busy[s] = false; active--; render(); run(); });
+  }
+  function attempt(s, tries) {
+    return F.toons.make(d, s, st.style).then(function (j) { st = Object.assign(st, j); return F.toons.image(d, s); })
+      .then(function (u) { imgs[s] = u; })
+      .catch(function (e) {
+        if (tries < 2 && (!e.status || e.status >= 500 || e.status === 409)) {
+          return new Promise(function (r) { setTimeout(r, 5000 * (tries + 1)); }).then(function () { return attempt(s, tries + 1); });
+        }
+        errs[s] = e.message;
+      });
+  }
+
 
   function portraitItem(slot, text) {
     var item = imgs[slot] ? { cartoon: imgs[slot], t: text } : { empty: true, t: text };

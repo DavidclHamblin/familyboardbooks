@@ -28,14 +28,36 @@
   }
 
   // A draft is one book in progress on our service. The id and secret stay in this browser.
+  var creating = {};
   T.draft = function (book, style, consent) {
     var d = T.saved(book);
     if (d) return Promise.resolve(d);
-    return req("POST", "/api/drafts", null, { book: book, style: style, consent: !!consent }).then(function (j) {
+    if (creating[book]) return creating[book];  // several pictures started at once share one new draft
+    creating[book] = req("POST", "/api/drafts", null, { book: book, style: style, consent: !!consent }).then(function (j) {
       var nd = { id: j.id, token: j.token };
       try { localStorage.setItem(key(book), JSON.stringify(nd)); } catch (e) {}
+      delete creating[book];
       return nd;
-    });
+    }, function (e) { delete creating[book]; throw e; });
+    return creating[book];
+  };
+
+  /* Run many jobs a few at a time. Each job is retried on its own if the network or the AI service
+     hiccups, so one slow or failed picture never holds up or breaks the rest.
+     jobs: array of functions returning promises. Resolves with [{ok, value|error}] in the same order. */
+  T.pool = function (jobs, opts) {
+    opts = opts || {};
+    var limit = opts.concurrency || 3, retries = opts.retries == null ? 2 : opts.retries, results = new Array(jobs.length), next = 0, done = 0;
+    var retryable = function (e) { return !e.status || e.status >= 500 || e.status === 409; };
+    function attempt(i, n) {
+      return jobs[i]().then(function (v) { results[i] = { ok: true, value: v }; }, function (e) {
+        if (n < retries && retryable(e)) return new Promise(function (r) { setTimeout(r, 4000 * (n + 1) + Math.random() * 2000); }).then(function () { return attempt(i, n + 1); });
+        results[i] = { ok: false, error: e };
+      }).then(function () { done++; if (opts.onProgress) opts.onProgress(done, jobs.length); });
+    }
+    function worker() { if (next >= jobs.length) return Promise.resolve(); var i = next++; return attempt(i, 0).then(worker); }
+    var workers = []; for (var w = 0; w < Math.min(limit, jobs.length); w++) workers.push(worker());
+    return Promise.all(workers).then(function () { return results; });
   };
   T.status = function (d) { return req("GET", "/api/drafts/" + d.id, d); };
   T.update = function (d, data) { return req("PATCH", "/api/drafts/" + d.id, d, data); };

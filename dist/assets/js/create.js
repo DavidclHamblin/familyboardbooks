@@ -53,14 +53,14 @@
   var q = params();
   var state = {
     step: 0, book: F.books[q.book] ? q.book : "abc", edition: q.edition || "", style: "splash",
-    language: "English", language2: "", bilingual: false, giftbox: false, copies: 0,
+    tray: [], picking: null, drawing: null, language: "English", language2: "", bilingual: false, giftbox: false, copies: 0,
     current: 0, child: "Amara", dedication: "For Amara, with love from all of us.", pages: null, done: false,
     cover: { color: "", frontPhoto: "", backMode: "photo", backPhoto: "", backMessage: "Made with love for Amara" }
   };
   function storeKey() { return "fbb-draft-" + state.book; }
   function save() {
     try {
-      var slim = JSON.parse(JSON.stringify(state, function (k, v) { return /^(file|frontFile|backFile|busy|toonErr|frontBusy|backBusy|frontErr|backErr)$/.test(k) ? undefined : v; }));
+      var slim = JSON.parse(JSON.stringify(state, function (k, v) { return /^(file|frontFile|backFile|busy|toonErr|frontBusy|backBusy|frontErr|backErr|tray|picking|drawing)$/.test(k) ? undefined : v; }));
       (slim.pages || []).forEach(function (p) { p.items.forEach(function (it) { it.photo = ""; it.toon = ""; }); });
       slim.cover.frontPhoto = ""; slim.cover.backPhoto = ""; slim.cover.frontToon = ""; slim.cover.backToon = ""; slim.toonInfo = null;
       localStorage.setItem(storeKey(), JSON.stringify(slim));
@@ -163,15 +163,41 @@
       var ph = kind === "letters" ? "e.g. " + (EXAMPLES.letters[p.key] ? EXAMPLES.letters[p.key][0] : p.key + "…") : kind === "people" ? "e.g. lives in Dublin" : kind === "sayings" ? "e.g. says Mummy" : p.prompt;
       return '<div class="slot' + (it.photo ? " has-photo" : "") + '"><div class="slot-thumb" aria-hidden="true">' + thumb + '</div><div class="slot-fields"><input type="text" id="c-t' + i + '" data-text="' + i + '" value="' + esc(it.text) + '" placeholder="' + esc(ph) + '" aria-label="' + esc(p.prompt) + " " + (i + 1) + '">' +
         '<div class="slot-actions"><label class="upload">' + (it.photo ? "Change photo" : "Add photo") + '<input type="file" accept="image/*" data-photo="' + i + '" aria-label="Photo for ' + esc(p.heading || "this page") + " " + (i + 1) + '"></label>' +
-        (it.photo || it.toon ? '<button type="button" class="linkish" data-remove="' + i + '">Remove photo</button>' : "") + (it.example ? '<span class="chip">Example</span>' : "") + "</div>" + toonControls(it, i) + "</div></div>";
+        (!it.photo && !it.toon && state.tray.length ? '<button type="button" class="linkish" data-pick-open="' + i + '">Choose from your photos (' + state.tray.length + ")</button>" : "") +
+        (it.photo || it.toon ? '<button type="button" class="linkish" data-remove="' + i + '">Remove photo</button>' : "") + (it.example ? '<span class="chip">Example</span>' : "") + "</div>" +
+        (state.picking === i && !it.photo && state.tray.length ? '<div class="tray tray-pick" role="group" aria-label="Your photos">' + state.tray.map(function (t, ti) { return '<button type="button" data-pick="' + i + ":" + ti + '"><img src="' + t.url + '" alt="Use photo ' + (ti + 1) + '"></button>'; }).join("") + "</div>" : "") +
+        toonControls(it, i) + "</div></div>";
     }).join("");
     var nav = '<div class="slot-actions"><button type="button" class="btn ghost btn-sm" data-move="-1"' + (state.current === 0 ? " disabled" : "") + '>&larr; Previous page</button><button type="button" class="btn btn-sm" data-move="1"' + (state.current === state.pages.length - 1 ? " disabled" : "") + ">Next page &rarr;</button></div>";
     return '<section class="panel"><h2>Add your names and photos</h2>' +
-      '<p class="notice">The example names are there to show how pages look. Type over them, or <button type="button" class="linkish" data-clear>clear all examples</button>. ' + (F.toons.enabled() ? "Photos stay on this device unless you make a free cartoon preview or order your book." : "Photos stay on this device until you reserve your book.") + "</p>" + previewBox() +
+      '<p class="notice">The example names are there to show how pages look. Type over them, or <button type="button" class="linkish" data-clear>clear all examples</button>. ' + (F.toons.enabled() ? "Photos stay on this device unless you make a free cartoon preview or order your book." : "Photos stay on this device until you reserve your book.") + "</p>" + trayBox() + previewBox() +
       '<div class="pages-ui"><div class="page-strip" role="group" aria-label="Pages">' + strip + "</div>" +
       '<div class="editor"><div class="editor-head"><h3>' + esc(p.editable ? "Page " + p.key : "Page " + p.heading) + '</h3><span class="hint">' + esc(p.prompt) + "</span></div>" + head + slots + nav + "</div>" +
       '<div id="live">' + F.bookPage(previewModel(p)) + '<p class="hint" style="margin-top:12px">' + (p.items.some(function (it) { return it.toon; }) ? "Your cartoon in the " + esc(styleName()) + " style." : "Preview. Your photos are turned into " + esc(styleName()) + " cartoons" + (F.toons.enabled() ? ": try it free on two pages." : " when we make your book.")) + "</p></div></div>" +
       navButtons(true, "Next: design the cover") + "</section>";
+  }
+
+  // ---------- Add all photos at once ----------
+  // Photos chosen in one go wait in a tray. Customers can fill empty pages in order, or pick a photo for each spot.
+  function trayBox() {
+    var empty = emptySpots().length;
+    return '<div class="tray-box"><div class="tray-head"><div><h3>Add all your photos at once</h3><p class="hint">Choose lots of photos together, then put them on your pages.</p></div>' +
+      '<label class="upload">Choose photos<input type="file" accept="image/*" multiple data-tray aria-label="Choose several photos"></label></div>' +
+      (state.tray.length ? '<div class="tray" role="list" aria-label="Photos waiting to be placed">' + state.tray.map(function (t, ti) { return '<span role="listitem"><img src="' + t.url + '" alt="Photo ' + (ti + 1) + '"><button type="button" data-tray-remove="' + ti + '" aria-label="Remove photo ' + (ti + 1) + '">&times;</button></span>'; }).join("") + "</div>" +
+        '<div class="slot-actions"><button type="button" class="btn btn-sm" data-tray-fill' + (empty ? "" : " disabled") + ">Fill empty pages in order</button><span class=\"hint\">" + state.tray.length + " photo" + (state.tray.length === 1 ? "" : "s") + " waiting. Or open a page and choose &ldquo;Choose from your photos&rdquo;.</span></div>" : "") +
+      "</div>";
+  }
+  // Empty spots, first picture on every page before second pictures, so 12 photos cover A to L.
+  function emptySpots() {
+    var out = [], most = Math.max.apply(null, state.pages.map(function (p) { return p.items.length; }));
+    for (var ii = 0; ii < most; ii++) state.pages.forEach(function (p, pi) { var it = p.items[ii]; if (it && !it.photo && !it.toon) out.push([pi, ii]); });
+    return out;
+  }
+  function placeFromTray(pi, ii, ti) {
+    var t = state.tray[ti], it = state.pages[pi].items[ii]; if (!t || !it) return;
+    it.photo = t.url; it.file = t.file; it.toon = ""; it.up = false; it.toonErr = "";
+    if (it.example) { it.text = ""; it.example = false; }
+    state.tray.splice(ti, 1);
   }
 
   // ---------- Free cartoon preview ----------
@@ -183,7 +209,43 @@
       : left > 0 ? "Add photos to up to two pages and we'll draw them as " + esc(styleName()) + " cartoons, so you can see your book before you pay. " + left + " free cartoon" + (left === 1 ? "" : "s") + " left."
       : "You've used your free preview. Order your book and we'll draw every page.";
     return '<div class="preview-box"><h3>Free preview: see your cartoons before you pay</h3><p>' + line + "</p>" +
-      '<label class="check"><input type="checkbox" id="pv-ok"' + (state.toonConsent ? " checked" : "") + "><span>I have permission to use the photos of everyone shown. Previews are deleted after 14 days if you don't order.</span></label></div>";
+      '<label class="check"><input type="checkbox" id="pv-ok"' + (state.toonConsent ? " checked" : "") + "><span>I have permission to use the photos of everyone shown. Previews are deleted after 14 days if you don't order.</span></label>" +
+      (state.drawErr && !state.toonConsent ? '<span class="toon-status" role="alert">Please tick the permission box first.</span>' : "") +
+      drawAllControl(info) + "</div>";
+  }
+  // Pictures with a photo but no cartoon yet, in page order.
+  function waitingSpots() {
+    var out = [];
+    state.pages.forEach(function (p, pi) { p.items.forEach(function (it, ii) { if (it.photo && !it.toon && !it.busy) out.push([pi, ii]); }); });
+    return out;
+  }
+  function drawAllControl(info) {
+    if (state.drawing) return '<p class="toon-status busy" role="status">' + (state.drawing.total ? "Drawing your cartoons: " + state.drawing.done + " of " + state.drawing.total + " ready. You can keep working while we draw." : "Getting ready…") + "</p>";
+    var waiting = waitingSpots().length, can = info.paid ? waiting : Math.min(waiting, Math.max(0, info.freeLeft));
+    if (!can) return "";
+    return '<div class="slot-actions"><button type="button" class="btn btn-sm btn-toon" data-draw-all>Draw ' + (can === 1 ? "my cartoon" : "all " + can + " cartoons") + " now</button><span class=\"hint\">Or draw them one by one on each page.</span></div>";
+  }
+  function drawAll() {
+    var box = $("#pv-ok");
+    if (box && !box.checked) { state.drawErr = true; render(); return; }
+    state.toonConsent = true; state.drawErr = false;
+    state.drawing = { done: 0, total: 0 }; render();
+    // Ask our service how many free cartoons are really left before starting.
+    F.toons.draft(state.book, state.style, true).then(function (d) { return F.toons.status(d); })
+      .then(function (j) { applyInfo(j); }, function () {})
+      .then(function () { startDrawAll(); });
+  }
+  function startDrawAll() {
+    var info = toonInfo(), spots = waitingSpots();
+    if (!info.paid) spots = spots.slice(0, Math.max(0, info.freeLeft));
+    if (!spots.length) { state.drawing = null; render(); return; }
+    state.drawing = { done: 0, total: spots.length };
+    spots.forEach(function (sp) { var it = state.pages[sp[0]].items[sp[1]]; it.busy = true; it.toonErr = ""; });
+    render();
+    F.toons.pool(spots.map(function (sp) { return function () { return toonJob(sp[0], sp[1]); }; }), {
+      concurrency: 3,
+      onProgress: function (n) { if (state.drawing) state.drawing.done = n; afterToon(); }
+    }).then(function () { state.drawing = null; afterToon(); });
   }
   function toonControls(it, i) {
     if (!F.toons.enabled() || (!it.photo && !it.toon)) return "";
@@ -200,21 +262,28 @@
   }
   function applyInfo(j) { if (j) state.toonInfo = { freeLeft: j.freeLeft, redosLeft: j.redosLeft, paid: j.paid }; }
   function makeToon(pi, ii) {
-    var it = state.pages[pi].items[ii], slot = "p" + pi + "-" + ii, box = $("#pv-ok");
+    var it = state.pages[pi].items[ii], box = $("#pv-ok");
     if (box && !box.checked) { it.toonErr = "Please tick the permission box above first."; render(); return; }
     state.toonConsent = true; it.busy = true; it.toonErr = ""; render();
-    var d;
-    F.toons.draft(state.book, state.style, true).then(function (dd) {
+    toonJob(pi, ii).catch(function () {});
+  }
+  // One picture: upload (once), draw, fetch the cartoon. Rejects on failure so the queue can retry it.
+  function toonJob(pi, ii) {
+    var it = state.pages[pi].items[ii], slot = "p" + pi + "-" + ii, d;
+    it.busy = true;
+    return F.toons.draft(state.book, state.style, true).then(function (dd) {
       d = dd;
       return it.up || !it.file ? null : F.toons.upload(d, slot, it.file).then(function () { it.up = true; });
     }).then(function () { return F.toons.make(d, slot, state.style); })
       .then(function (j) { applyInfo(j); return F.toons.image(d, slot); })
-      .then(function (url) { it.toon = url; it.busy = false; afterToon(); })
+      .then(function (url) { it.toon = url; it.busy = false; it.toonErr = ""; afterToon(); })
       .catch(function (e) {
         it.busy = false; it.toonErr = e.message;
         if (e.status === 402) state.toonInfo = Object.assign({}, toonInfo(), { freeLeft: 0, redosLeft: 0 });
-        if (e.status === 403 || e.status === 404) { F.toons.forget(state.book); it.up = false; }
+        if (e.status === 403) { F.toons.forget(state.book); it.up = false; }
+        if (e.status === 404) it.up = false;  // photo missing on our side: upload again next time
         afterToon();
+        throw e;
       });
   }
   function afterToon() { if (state.step === 2) render(); else save(); }
@@ -250,13 +319,14 @@
       if (f && !state.cover[side + "Up"] && !(side === "back" && state.cover.backMode !== "photo")) jobs.push({ slot: "cover-" + side, file: f, done: function () { state.cover[side + "Up"] = true; } });
     });
     return F.toons.draft(state.book, state.style, true).then(function (d) {
-      var n = 0;
-      return jobs.reduce(function (pr, job) {
-        return pr.then(function () {
-          n++; msg.textContent = "Uploading your photos securely (" + n + " of " + jobs.length + ")…";
-          return F.toons.upload(d, job.slot, job.file).then(job.done);
-        });
-      }, Promise.resolve()).then(function () {
+      msg.textContent = jobs.length ? "Uploading your photos securely (0 of " + jobs.length + ")…" : "Saving your book…";
+      return F.toons.pool(jobs.map(function (job) { return function () { return F.toons.upload(d, job.slot, job.file).then(job.done); }; }), {
+        concurrency: 3,
+        onProgress: function (n, total) { msg.textContent = "Uploading your photos securely (" + n + " of " + total + ")…"; }
+      }).then(function (res) {
+        var failed = res.filter(function (r) { return !r.ok; }).length;
+        if (failed) throw new Error(failed + " photo" + (failed === 1 ? "" : "s") + " didn't upload. Please check your connection and try again: the ones already uploaded won't be sent twice.");
+      }).then(function () {
         var kind = F.books[state.book].builder.kind;
         return F.toons.update(d, {
           style: state.style, keep: !!($("#r-keep") && $("#r-keep").checked),
@@ -448,6 +518,16 @@
       it.photo = ""; it.file = null; it.toon = ""; it.up = false; it.toonErr = ""; render();
     }
     else if (t.dataset.toon != null) { makeToon(state.current, Number(t.dataset.toon)); }
+    else if (t.hasAttribute("data-draw-all")) { drawAll(); }
+    else if (t.dataset.pickOpen != null) { state.picking = state.picking === Number(t.dataset.pickOpen) ? null : Number(t.dataset.pickOpen); render(); }
+    else if (t.dataset.pick) { var pk = t.dataset.pick.split(":"); placeFromTray(state.current, Number(pk[0]), Number(pk[1])); state.picking = null; render(); }
+    else if (t.dataset.trayRemove != null) { var tr = state.tray.splice(Number(t.dataset.trayRemove), 1)[0]; if (tr) URL.revokeObjectURL(tr.url); render(); }
+    else if (t.hasAttribute("data-tray-fill")) {
+      var spots = emptySpots(), n = 0;
+      while (state.tray.length && n < spots.length) { placeFromTray(spots[n][0], spots[n][1], 0); n++; }
+      state.current = spots.length ? spots[0][0] : state.current;
+      render();
+    }
     else if (t.hasAttribute("data-clear")) {
       state.pages.forEach(function (p) { if (p.example) { p.heading = ""; p.example = false; } p.items.forEach(function (it) { if (it.example) { it.text = ""; it.example = false; } }); });
       render();
@@ -470,6 +550,9 @@
       state.cover[t.dataset.coverPhoto + "File"] = t.files[0];
       ["Toon", "Up", "Err"].forEach(function (k) { state.cover[t.dataset.coverPhoto + k] = k === "Up" ? false : ""; });
       render();
+    } else if (t.hasAttribute("data-tray") && t.files && t.files.length) {
+      Array.prototype.forEach.call(t.files, function (f) { if (/^image\//.test(f.type) || /\.(heic|jpe?g|png|webp)$/i.test(f.name)) state.tray.push({ file: f, url: URL.createObjectURL(f) }); });
+      t.value = ""; render();
     } else if (t.dataset.photo != null && t.files && t.files[0]) {
       var it = state.pages[state.current].items[Number(t.dataset.photo)];
       it.photo = URL.createObjectURL(t.files[0]);

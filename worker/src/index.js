@@ -99,6 +99,26 @@ async function putMeta(env, meta) {
   meta.updated = Date.now();
   await env.BUCKET.put("meta/" + meta.id + ".json", JSON.stringify(meta), { httpMetadata: { contentType: "application/json" } });
 }
+// Many cartoons for one book can be drawn at the same time, so every change to the draft record is a
+// conditional write: if someone else changed it in between, read it again and re-apply the change.
+function httpErr(status, message) { return Object.assign(new Error(message), { status }); }
+async function updateMeta(env, id, change) {
+  const key = "meta/" + id + ".json";
+  for (let i = 0; i < 10; i++) {
+    const o = await env.BUCKET.get(key);
+    if (!o) throw httpErr(404, "Not found");
+    const meta = await o.json();
+    if (change(meta) === false) return meta;
+    meta.updated = Date.now();
+    const ok = await env.BUCKET.put(key, JSON.stringify(meta), { httpMetadata: { contentType: "application/json" }, onlyIf: { etagMatches: o.etag } });
+    if (ok) return meta;
+    await new Promise(r => setTimeout(r, 40 + Math.random() * 160 * (i + 1)));
+  }
+  throw httpErr(503, "We're busy saving your book. Please try again.");
+}
+const PENDING_MS = 3 * 60 * 1000;
+function busySlots(meta) { const now = Date.now(); return Object.values(meta.slots).filter(s => s.toon || (s.pending && now - s.pending < PENDING_MS)).length; }
+
 async function authDraft(env, req, id) {
   if (!ID_RE.test(id)) return { error: err(404, "Not found") };
   const meta = await getMeta(env, id);
@@ -129,7 +149,7 @@ function publicStatus(meta) {
     keep: !!meta.keep, pages: meta.pages || null, cover: meta.cover || null,
     photos: Object.keys(meta.slots).filter(s => meta.slots[s].orig),
     cartoons: Object.keys(meta.slots).filter(s => meta.slots[s].toon),
-    freeLeft: meta.paid ? null : Math.max(0, freeSlots(meta) - toonCount(meta)),
+    freeLeft: meta.paid ? null : Math.max(0, freeSlots(meta) - busySlots(meta)),
     redosLeft: meta.paid ? null : Math.max(0, meta.freeGens - meta.gens)
   };
 }
@@ -182,7 +202,11 @@ async function openai(env, photo, refs, style) {
 }
 
 // "mock" returns the photo unchanged: for testing the whole flow without paying for AI.
-async function mock(env, photo) { return { bytes: photo.bytes, type: photo.type }; }
+async function mock(env, photo) {
+  if (env.MOCK_DELAY_MS) await new Promise(r => setTimeout(r, num(env.MOCK_DELAY_MS, 0)));  // simulate AI drawing time in tests
+  if (env.MOCK_FAIL_RATE && Math.random() < num(env.MOCK_FAIL_RATE, 0)) throw new Error("simulated AI failure");  // tests only
+  return { bytes: photo.bytes, type: photo.type };
+}
 
 // Which model draws which style. ENGINE=auto uses STYLE_ENGINES; ENGINE=gemini/openai forces one; mock skips AI.
 function engineFor(env, style) {
@@ -251,10 +275,11 @@ async function onOrderPaid(env, order) {
   const ids = [...new Set(attrs.filter(a => a.name === "_draft").map(a => String(a.value)))];
   for (const id of ids) {
     if (!ID_RE.test(id)) continue;
-    const meta = await getMeta(env, id);
-    if (!meta || meta.paid) continue;
-    meta.paid = true; meta.paidAt = Date.now(); meta.order = String(order.name || order.id || "");
-    await putMeta(env, meta);
+    if (!(await getMeta(env, id))) continue;
+    await updateMeta(env, id, meta => {
+      if (meta.paid) return false;
+      meta.paid = true; meta.paidAt = Date.now(); meta.order = String(order.name || order.id || "");
+    });
   }
   return ids.length;
 }
@@ -281,12 +306,14 @@ async function handle(req, env) {
   if (mm && m === "POST") {
     const a = /^Bearer (.+)$/.exec(req.headers.get("Authorization") || "");
     if (!env.ADMIN_TOKEN || !a || !timingSafeEqual(a[1], env.ADMIN_TOKEN)) return err(403, "Not allowed");
-    const meta = await getMeta(env, mm[1]); if (!meta) return err(404, "Not found");
+    if (!ID_RE.test(mm[1]) || !(await getMeta(env, mm[1]))) return err(404, "Not found");
     const body = await req.json();
-    if (body.status === "printed") { meta.printedAt = Date.now(); await deletePrefix(env, "orig/" + meta.id + "/"); Object.values(meta.slots).forEach(s => { s.orig = false; }); }
-    else if (body.status === "delivered") meta.deliveredAt = Date.now();
-    else return err(400, "Unknown status");
-    await putMeta(env, meta);
+    if (body.status !== "printed" && body.status !== "delivered") return err(400, "Unknown status");
+    if (body.status === "printed") await deletePrefix(env, "orig/" + mm[1] + "/");
+    await updateMeta(env, mm[1], meta => {
+      if (body.status === "printed") { meta.printedAt = Date.now(); Object.values(meta.slots).forEach(s => { s.orig = false; }); }
+      else meta.deliveredAt = Date.now();
+    });
     return json({ ok: true });
   }
 
@@ -317,13 +344,17 @@ async function handle(req, env) {
 
   if (rest === "" && m === "PATCH") {
     const body = await req.json().catch(() => ({}));
-    if (STYLES.includes(body.style)) meta.style = body.style;
-    if (typeof body.keep === "boolean") meta.keep = body.keep;
-    if (Array.isArray(body.pages)) meta.pages = JSON.parse(JSON.stringify(body.pages).slice(0, 60000));
-    if (body.cover && typeof body.cover === "object") meta.cover = JSON.parse(JSON.stringify(body.cover).slice(0, 4000));
-    if (body.approve === true) { if (!meta.paid) return E(402, "Please complete your order first."); meta.approvedAt = Date.now(); }
-    await putMeta(env, meta);
-    return J(publicStatus(meta));
+    const pagesJson = Array.isArray(body.pages) ? JSON.stringify(body.pages) : null;
+    const coverJson = body.cover && typeof body.cover === "object" ? JSON.stringify(body.cover) : null;
+    if ((pagesJson && pagesJson.length > 60000) || (coverJson && coverJson.length > 4000)) return E(413, "Your book details are too long.");
+    const updated = await updateMeta(env, id, meta => {
+      if (STYLES.includes(body.style)) meta.style = body.style;
+      if (typeof body.keep === "boolean") meta.keep = body.keep;
+      if (pagesJson) meta.pages = JSON.parse(pagesJson);
+      if (coverJson) meta.cover = JSON.parse(coverJson);
+      if (body.approve === true) { if (!meta.paid) throw httpErr(402, "Please complete your order first."); meta.approvedAt = Date.now(); }
+    });
+    return J(publicStatus(updated));
   }
 
   if (rest === "" && m === "DELETE") { await deleteDraft(env, id); return J({ ok: true, deleted: true }); }
@@ -341,47 +372,56 @@ async function handle(req, env) {
     const bytes = await req.arrayBuffer();
     if (bytes.byteLength > MAX_PHOTO_BYTES || bytes.byteLength < 100) return E(413, "That photo is too large or empty.");
     await env.BUCKET.put("orig/" + id + "/" + slot, bytes, { httpMetadata: { contentType: type } });
-    const s = meta.slots[slot] || (meta.slots[slot] = { gens: 0 });
-    s.orig = true; s.toon = false; s.uploaded = Date.now();
     await env.BUCKET.delete("toon/" + id + "/" + slot + ".png");
-    await putMeta(env, meta);
+    await updateMeta(env, id, meta => {
+      if (Object.keys(meta.slots).length >= 80 && !meta.slots[slot]) throw httpErr(400, "Too many photos in this book.");
+      const s = meta.slots[slot] || (meta.slots[slot] = { gens: 0 });
+      s.orig = true; s.toon = false; s.uploaded = Date.now(); delete s.pending;
+    });
     return J({ ok: true, slot });
   }
 
   if (kind === "photos" && m === "DELETE") {
     await env.BUCKET.delete(["orig/" + id + "/" + slot, "toon/" + id + "/" + slot + ".png"]);
-    delete meta.slots[slot]; await putMeta(env, meta);
+    await updateMeta(env, id, meta => { delete meta.slots[slot]; });
     return J({ ok: true });
   }
 
   if (kind === "cartoons" && m === "POST") {
-    const s = meta.slots[slot];
-    if (!s || !s.orig) return E(404, "Upload the photo first.");
     const body = await req.json().catch(() => ({}));
-    const style = STYLES.includes(body.style) ? body.style : meta.style;
-    if (!meta.paid) {
-      if (!s.toon && toonCount(meta) >= meta.freeSlots) return E(402, "Your free preview is used up. Order your book to see every page.");
-      if (meta.gens >= meta.freeGens) return E(402, "You've used your free redos. Order your book to see every page.");
-    } else {
-      const limit = Object.keys(meta.slots).length * 4 + 20;
-      if (meta.gens >= meta.freeGens + limit) return E(429, "Too many redos. Please email hello@familyboardbooks.com and we'll help.");
-    }
     let allowance = null;
     if (!meta.paid) {
       allowance = await freeAllowance(env, req);
       if (!allowance.ok) return E(429, allowance.message);
     }
+    // Reserve this drawing first, so parallel requests can't go over the free preview.
+    let style;
+    await updateMeta(env, id, m => {
+      const s = m.slots[slot];
+      if (!s || !s.orig) throw httpErr(404, "Upload the photo first.");
+      if (s.pending && Date.now() - s.pending < PENDING_MS) throw httpErr(409, "This picture is already being drawn.");
+      if (!m.paid) {
+        if (!s.toon && busySlots(m) >= m.freeSlots) throw httpErr(402, "Your free preview is used up. Order your book to see every page.");
+        if (m.gens >= m.freeGens) throw httpErr(402, "You've used your free redos. Order your book to see every page.");
+      } else if (m.gens >= m.freeGens + Object.keys(m.slots).length * 4 + 20) {
+        throw httpErr(429, "Too many redos. Please email hello@familyboardbooks.com and we'll help.");
+      }
+      style = STYLES.includes(body.style) ? body.style : m.style;
+      m.gens = (m.gens || 0) + 1; s.pending = Date.now();
+    });
+    const release = ok => updateMeta(env, id, m => {
+      const s = m.slots[slot]; if (!s) return false;
+      delete s.pending;
+      if (ok) { s.toon = true; s.gens = (s.gens || 0) + 1; s.style = style; s.engine = ok; } else m.gens = Math.max(0, (m.gens || 1) - 1);
+    });
     const obj = await env.BUCKET.get("orig/" + id + "/" + slot);
-    if (!obj) return E(404, "Upload the photo first.");
+    if (!obj) { await release(false); return E(404, "Upload the photo first."); }
     let out;
     try { out = await makeCartoon(env, { bytes: await obj.arrayBuffer(), type: obj.httpMetadata?.contentType || "image/jpeg" }, style); }
-    catch (e) { console.error("cartoon failed", id, slot, e.message); return E(502, "We couldn't draw this one. Please try again, or try a different photo."); }
+    catch (e) { console.error("cartoon failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this one. Please try again, or try a different photo."); }
     await env.BUCKET.put("toon/" + id + "/" + slot + ".png", out.bytes, { httpMetadata: { contentType: out.type } });
     if (allowance && out.engine !== "mock") await allowance.record();
-    const fresh = await getMeta(env, id) || meta;  // re-read so parallel uploads aren't lost
-    const fs = fresh.slots[slot] || (fresh.slots[slot] = { gens: 0, orig: true });
-    fs.toon = true; fs.gens = (fs.gens || 0) + 1; fs.style = style; fs.engine = out.engine; fresh.gens = (fresh.gens || 0) + 1;
-    await putMeta(env, fresh);
+    const fresh = await release(out.engine);
     return J({ ok: true, slot, ...publicStatus(fresh) });
   }
 
@@ -406,8 +446,7 @@ async function cleanup(env) {
       if (!meta.paid && now - meta.created > unpaidDays * DAY) { await deleteDraft(env, meta.id); removed++; continue; }
       if (meta.paid && (meta.printedAt || now - meta.paidAt > origBackstop * DAY) && Object.values(meta.slots).some(s => s.orig)) {
         await deletePrefix(env, "orig/" + meta.id + "/");
-        Object.values(meta.slots).forEach(s => { s.orig = false; });
-        await putMeta(env, meta);
+        await updateMeta(env, meta.id, m => { Object.values(m.slots).forEach(s => { s.orig = false; }); }).catch(() => {});
       }
       if (meta.paid && !meta.keep && meta.deliveredAt && now - meta.deliveredAt > keepAfterDelivery * DAY) { await deleteDraft(env, meta.id); removed++; }
     }
@@ -423,7 +462,11 @@ async function cleanup(env) {
 export default {
   async fetch(req, env) {
     try { return await handle(req, env); }
-    catch (e) { console.error(e && e.stack || e); return err(500, "Something went wrong. Please try again."); }
+    catch (e) {
+      const h = cors(env, req);
+      if (e && e.status) return err(e.status, e.message, h);
+      console.error(e && e.stack || e); return err(500, "Something went wrong. Please try again.", h);
+    }
   },
   async scheduled(event, env, ctx) { ctx.waitUntil(cleanup(env)); }
 };
