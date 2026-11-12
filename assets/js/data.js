@@ -190,8 +190,10 @@ FBB.books = {
 FBB.order = ["abc", "numbers", "colours", "emotions", "family", "sayings"];
 
 FBB.comingSoon = [
-  { name: "First Sounds", glyph: "sh", color: "leaf", line: "Phonics with family examples" },
-  { name: "Our Year", glyph: "sun", color: "sun", line: "Birthdays, holidays and seasons" }
+  { id: "shapes", name: "Family Shapes", glyph: "shapes", color: "sky", line: "Squares, circles and stars, with your family in every picture" },
+  { id: "where", name: "Where's Daddy?", glyph: "where", color: "sun", line: "In front, behind, on top: position words with the people they love" },
+  { id: "sounds", name: "First Sounds", glyph: "sh", color: "leaf", line: "Phonics with family examples" },
+  { id: "year", name: "Our Year", glyph: "sun", color: "sun", line: "Birthdays, holidays and seasons" }
 ];
 
 FBB.colourWords = [

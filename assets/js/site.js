@@ -23,9 +23,15 @@
       return '<a class="tcard t-' + b.color + '" href="' + b.slug + '.html"><div class="glyph">' + F.glyph(b.glyph) + "</div><h3>" + F.esc(b.short === "ABC" ? "ABC" : b.short) + "</h3><p>" + F.esc(b.tagline) + '</p><div class="from"><span>From ' + F.money(minPrice(b)) + '</span><span aria-hidden="true">→</span></div></a>';
     }).join("");
     html += F.comingSoon.map(function (s) {
-      return '<div class="tcard soon" aria-label="' + F.esc(s.name) + ', coming soon"><span class="tag">Coming soon</span><div class="glyph">' + F.glyph(s.glyph) + "</div><h3>" + F.esc(s.name) + "</h3><p>" + F.esc(s.line) + '</p><div class="from"><span>Join the waitlist</span></div></div>';
+      return '<a class="tcard soon" href="#join" data-soon="' + F.esc(s.id) + '" aria-label="' + F.esc(s.name) + ', coming soon. Get notified"><span class="tag">Coming soon</span><div class="glyph">' + F.glyph(s.glyph) + "</div><h3>" + F.esc(s.name) + "</h3><p>" + F.esc(s.line) + '</p><div class="from"><span>Notify me &rarr;</span></div></a>';
     }).join("");
     shelf.innerHTML = html;
+    // "Notify me" on a coming-soon book jumps to the sign-up form with that book chosen.
+    shelf.addEventListener("click", function (e) {
+      var a = e.target.closest("[data-soon]"); if (!a) return;
+      var sel = $("#w-book"); if (sel) sel.value = a.dataset.soon;
+      setTimeout(function () { var em = $("#w-email"); if (em) em.focus({ preventScroll: true }); }, 400);
+    });
     var prev = $("#shelf-prev"), next = $("#shelf-next");
     function upd() {
       prev.disabled = shelf.scrollLeft < 8;

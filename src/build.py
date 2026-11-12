@@ -108,6 +108,7 @@ def home():
     faq_html = "".join(
         f'<details{" id=" + chr(34) + q[2] + chr(34) if len(q) > 2 else ""}><summary>{e(q[0])}</summary><p>{e(q[1])}</p></details>' for q in faq)
     options = "".join(f'<option value="{k}">{e(BOOKS[k]["name"])}</option>' for k in ORDER)
+    options += '<optgroup label="Coming soon">' + "".join(f'<option value="{e(c["id"])}">{e(c["name"])}</option>' for c in data["comingSoon"]) + "</optgroup>"
     body = f"""
 <section class="hero"><div class="wrap hero-grid">
 <h1 class="wordmark">Family Board Books</h1>
