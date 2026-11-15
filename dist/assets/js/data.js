@@ -63,7 +63,6 @@ FBB.books = {
     ],
     editions: [
       { id: "classic", name: "Classic", pages: "28 pages", detail: "One page per letter, up to 3 pictures each", price: 49, badge: "Most popular" },
-      { id: "deluxe", name: "Deluxe", pages: "40 pages", detail: "Extra pages for big families, up to 6 pictures per letter", price: 59 },
       { id: "copy", name: "Extra copy", pages: "Same book", detail: "For grandparents and godparents, ordered with your book", price: 29, isCopy: true }
     ],
     samples: [
