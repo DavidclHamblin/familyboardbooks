@@ -85,7 +85,7 @@ FBB.books = {
     ],
     editions: [
       { id: "classic", name: "1 to 10", pages: "24 pages", detail: "One page per number", price: 39, badge: "Most popular" },
-      { id: "deluxe", name: "1 to 20", pages: "32 pages", detail: "Counts on to 20 for older toddlers", price: 47 },
+      { id: "deluxe", name: "1 to 20", pages: "28 pages", detail: "Counts on to 20 for older toddlers", price: 47 },
       { id: "copy", name: "Extra copy", pages: "Same book", detail: "Ordered with your book", price: 25, isCopy: true }
     ],
     samples: [
