@@ -1,3 +1,4 @@
+import { STORIES, WHO, WHERE, characterPrompt, scenePrompt } from "./stories.js";
 /* Family Board Books: photo storage and cartoon pipeline (Cloudflare Worker + R2, EU jurisdiction).
 
    Storage layout in the R2 bucket:
@@ -15,7 +16,7 @@
    A daily cron deletes unpaid drafts, originals after printing, and cartoons 30 days after
    delivery unless the customer chose to keep them. */
 
-const SLOT_RE = /^(p\d{1,3}-\d{1,2}|cover-front|cover-back)$/;
+const SLOT_RE = /^(p\d{1,3}-\d{1,2}|cover-front|cover-back|c-[a-z]{2,12}|s\d{1,2})$/;
 const ID_RE = /^[a-z0-9]{20}$/;
 const STYLES = ["splash", "painted", "watercolour", "comic", "storybook"];
 const ENGINES = ["gemini", "openai"];
@@ -199,6 +200,53 @@ async function openai(env, photo, refs, style) {
   const j = await res.json();
   if (!res.ok) throw new Error("OpenAI " + res.status + ": " + (j.error && j.error.message || "error"));
   return { bytes: unb64(j.data[0].b64_json), type: "image/png" };
+}
+
+// Generic calls: any number of input images plus an instruction. Used by story books.
+async function geminiImages(env, images, text, aspect) {
+  const model = env.GEMINI_MODEL || "gemini-3.1-flash-image";
+  const parts = images.map(r => ({ inline_data: { mime_type: r.type, data: b64(r.bytes) } })).concat([{ text }]);
+  const cfg = { responseModalities: ["IMAGE"] };
+  if (aspect) cfg.imageConfig = { aspectRatio: aspect };
+  const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent", {
+    method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+    body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: cfg })
+  });
+  const j = await res.json();
+  if (!res.ok) throw new Error("Gemini " + res.status + ": " + (j.error && j.error.message || "error"));
+  for (const c of j.candidates || []) for (const p of (c.content && c.content.parts) || []) {
+    const d = p.inlineData || p.inline_data;
+    if (d && d.data) return { bytes: unb64(d.data), type: d.mimeType || d.mime_type || "image/png" };
+  }
+  throw new Error("Gemini returned no image");
+}
+async function openaiImages(env, images, text, aspect) {
+  const fd = new FormData();
+  fd.append("model", env.OPENAI_MODEL || "gpt-image-2");
+  fd.append("prompt", text);
+  fd.append("size", aspect === "16:9" ? "1536x1024" : aspect === "3:4" ? "1024x1536" : "1024x1024");
+  fd.append("quality", env.OPENAI_QUALITY || "medium");
+  images.forEach((r, i) => fd.append("image[]", new Blob([r.bytes], { type: r.type }), "ref" + i + ".png"));
+  const res = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: "Bearer " + env.OPENAI_API_KEY }, body: fd });
+  const j = await res.json();
+  if (!res.ok) throw new Error("OpenAI " + res.status + ": " + (j.error && j.error.message || "error"));
+  return { bytes: unb64(j.data[0].b64_json), type: "image/png" };
+}
+async function drawStory(env, images, text, aspect) {
+  const forced = env.ENGINE || "mock";
+  if (forced === "mock") return Object.assign(await mock(env, images[0] || { bytes: new Uint8Array(200), type: "image/png" }), { engine: "mock" });
+  const first = ENGINES.includes(env.STORY_ENGINE) ? env.STORY_ENGINE : "gemini";
+  const order = [first].concat(ENGINES.filter(e => e !== first)).filter(e => hasKey(env, e));
+  let lastErr = new Error("No AI key set");
+  for (const eng of order) {
+    try { return Object.assign(await (eng === "gemini" ? geminiImages : openaiImages)(env, images, text, aspect), { engine: eng }); }
+    catch (e) { lastErr = e; console.error("story engine failed", eng, e.message); }
+  }
+  throw lastErr;
+}
+async function loadImage(env, key) {
+  const o = await env.BUCKET.get(key);
+  return o ? { bytes: await o.arrayBuffer(), type: o.httpMetadata?.contentType || "image/png" } : null;
 }
 
 // "mock" returns the photo unchanged: for testing the whole flow without paying for AI.
@@ -389,6 +437,18 @@ async function handle(req, env) {
 
   if (kind === "cartoons" && m === "POST") {
     const body = await req.json().catch(() => ({}));
+    // Story books: c-<role> draws a family member as a story character from their photo,
+    // s<n> draws scene n from the approved characters. Prompts come only from stories.js.
+    const isScene = /^s\d/.test(slot), isChar = /^c-/.test(slot);
+    let story = null;
+    if (isScene || isChar) {
+      story = STORIES[body.story];
+      if (!story) return E(400, "Unknown story.");
+      if (isChar && !story.roles[slot.slice(2)]) return E(400, "Unknown role.");
+      if (isScene && !story.scenes[slot.slice(1)]) return E(400, "Unknown scene.");
+      if (body.who && !WHO.includes(body.who)) return E(400, "Unknown person.");
+      if (body.where && !WHERE.includes(body.where)) return E(400, "Unknown position.");
+    }
     let allowance = null;
     if (!meta.paid) {
       allowance = await freeAllowance(env, req);
@@ -397,8 +457,9 @@ async function handle(req, env) {
     // Reserve this drawing first, so parallel requests can't go over the free preview.
     let style;
     await updateMeta(env, id, m => {
-      const s = m.slots[slot];
-      if (!s || !s.orig) throw httpErr(404, "Upload the photo first.");
+      let s = m.slots[slot];
+      if (isScene && !s) s = m.slots[slot] = { gens: 0 };
+      if (!s || (!s.orig && !isScene)) throw httpErr(404, "Upload the photo first.");
       if (s.pending && Date.now() - s.pending < PENDING_MS) throw httpErr(409, "This picture is already being drawn.");
       if (!m.paid) {
         if (!s.toon && busySlots(m) >= m.freeSlots) throw httpErr(402, "Your free preview is used up. Order your book to see every page.");
@@ -414,11 +475,23 @@ async function handle(req, env) {
       delete s.pending;
       if (ok) { s.toon = true; s.gens = (s.gens || 0) + 1; s.style = style; s.engine = ok; } else m.gens = Math.max(0, (m.gens || 1) - 1);
     });
+    let out;
+    if (isScene) {
+      const sc = story.scenes[slot.slice(1)], refs = [];
+      for (const role of sc.cast) {
+        const img = await loadImage(env, "toon/" + id + "/c-" + role + ".png");
+        if (!img) { await release(false); return E(409, "Draw " + story.roles[role].name + " first."); }
+        refs.push(img);
+      }
+      try { out = await drawStory(env, refs, scenePrompt(body.story, slot.slice(1)), "16:9"); }
+      catch (e) { console.error("scene failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this scene. Please try again."); }
+    } else {
     const obj = await env.BUCKET.get("orig/" + id + "/" + slot);
     if (!obj) { await release(false); return E(404, "Upload the photo first."); }
-    let out;
-    try { out = await makeCartoon(env, { bytes: await obj.arrayBuffer(), type: obj.httpMetadata?.contentType || "image/jpeg" }, style); }
+    const photo = { bytes: await obj.arrayBuffer(), type: obj.httpMetadata?.contentType || "image/jpeg" };
+    try { out = isChar ? await drawStory(env, [photo], characterPrompt(body.story, slot.slice(2), body.who, body.where), "3:4") : await makeCartoon(env, photo, style); }
     catch (e) { console.error("cartoon failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this one. Please try again, or try a different photo."); }
+    }
     await env.BUCKET.put("toon/" + id + "/" + slot + ".png", out.bytes, { httpMetadata: { contentType: out.type } });
     if (allowance && out.engine !== "mock") await allowance.record();
     const fresh = await release(out.engine);

@@ -34,6 +34,7 @@ ALLOWED_ORIGINS = "https://www.familyboardbooks.com,https://familyboardbooks.com
 FREE_SLOTS = "6"           # free cartoons before paying (two pages)
 FREE_GENS = "10"           # free tries in total, so a few redos
 UNPAID_DAYS = "14"         # unpaid previews are deleted after this many days
+STORY_ENGINE = "gemini"     # model for story-book characters and scenes (the other is the backup)
 FREE_DAILY_CAP = "150"     # free preview cartoons per day for the whole site (cost ceiling)
 FREE_IP_DAILY = "12"       # free preview cartoons per day from one internet connection
 
