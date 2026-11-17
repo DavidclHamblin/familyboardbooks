@@ -10,12 +10,17 @@ const WOLF = "the Wolf: a lanky, scruffy grey wolf with yellow eyes, a far-too-w
 export const STORIES = {
   redhood: {
     title: "Little Red Riding Hood",
+    villain: WOLF,
     style: "a warm, classic hand-painted children's picture-book illustration: soft gouache and watercolour textures, gentle storybook light, rich forest greens with a strawberry-red accent, expressive friendly faces and slightly simplified shapes. Not 3D, not anime, not photographic",
     roles: {
-      hero: { name: "Little Red", costume: "a bright strawberry-red hooded cape over simple, cosy clothes and little brown boots, holding a small wicker basket" },
-      mum: { name: "the mother", costume: "everyday clothes with a flowery apron" },
-      grandma: { name: "Grandma", costume: "a long cosy dress, a knitted shawl and slippers" },
-      helper: { name: "the woodcutter", costume: "a checked flannel shirt, braces, sturdy boots and a wool cap (no axe)" }
+      hero: { name: "Little Red", costume: "a bright strawberry-red hooded cape over simple, cosy clothes and little brown boots, holding a small wicker basket",
+        standin: "a cheerful five-year-old child with a round face, rosy cheeks and shoulder-length wavy brown hair" },
+      mum: { name: "the mother", costume: "everyday clothes with a flowery apron",
+        standin: "a friendly young mother in her thirties with warm brown skin and dark curly hair tied up" },
+      grandma: { name: "Grandma", costume: "a long cosy dress, a knitted shawl and slippers",
+        standin: "a kind, smiling grandmother in her seventies with short silver hair and round glasses" },
+      helper: { name: "the woodcutter", costume: "a checked flannel shirt, braces, sturdy boots and a wool cap (no axe)",
+        standin: "a tall, friendly man in his thirties with a short dark beard" }
     },
     scenes: {
       1: { cast: ["hero"], text: "right", desc: "Little Red stands happily outside a small cottage with a crooked chimney at the edge of a sunny, enchanted green forest" },
@@ -34,13 +39,31 @@ export const STORIES = {
   }
 };
 
+// Every character (from a photo, a stand-in or the villain) is drawn the same way, so they all match on the page.
+const POSE = "standing in a relaxed three-quarter view on a plain white background, the whole body in frame, filling most of the height of the picture";
+
 export function characterPrompt(story, role, who, where) {
   const s = STORIES[story], r = s.roles[role];
   const person = (who || "person") + (where ? " " + where : "");
-  return "IMAGE 1 is a photo of the customer's family. Draw ONLY the " + person + " from it as a full-body storybook character called " + r.name +
-    ", standing in a relaxed three-quarter view on a plain white background, the whole body in frame. " +
-    "Keep them clearly recognisable: the same face shape and features, skin tone, hair, age and build. Remove any sunglasses so the eyes show. " +
+  return "IMAGE 1 is a photo of the customer's family. Draw ONLY the " + person + " from it as a full-body storybook character called " + r.name + ", " + POSE + ". " +
+    "LIKENESS IS THE MOST IMPORTANT THING: their own family must recognise them instantly, as in a portrait painted by a skilled illustrator, not a generic storybook face. " +
+    "Copy from the photo, as closely as the style allows: the face shape and proportions, the shape, size and spacing of the eyes, the eyebrows, nose, mouth and smile, " +
+    "the ears, skin tone, freckles, dimples or moles, the hairline and the hair's exact colour, length, parting and texture, any glasses, beard or moustache, and their age and build. " +
+    "Keep the stylisation light on the face: do not make the eyes bigger, the nose smaller or the face younger or prettier than in the photo. Remove any sunglasses so the eyes show. " +
     "Dress them in " + r.costume + ". Style: " + s.style + ". Draw only this one character. No text or letters.";
+}
+
+// Our own invented character for a part the family leaves without a photo (no customer image is used).
+export function standinPrompt(story, role) {
+  const s = STORIES[story], r = s.roles[role];
+  return "Draw a full-body storybook character called " + r.name + ": " + r.standin + ", " + POSE + ". " +
+    "Dress them in " + r.costume + ". Style: " + s.style + ". Draw only this one character. No text or letters.";
+}
+
+export function villainPrompt(story) {
+  const s = STORIES[story];
+  return "Draw " + s.villain + ", as a full-body storybook character standing on his hind legs, " + POSE + ". " +
+    "Style: " + s.style + ". Draw only this one character. No text or letters.";
 }
 
 export function scenePrompt(story, n) {
