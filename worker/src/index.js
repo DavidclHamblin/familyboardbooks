@@ -500,7 +500,10 @@ async function handle(req, env) {
         if (!img) { await release(false); return E(409, "Draw " + story.roles[role].name + " first."); }
         refs.push(img);
       }
-      try { out = await drawStory(env, refs, scenePrompt(body.story, slot.slice(1)), "16:9"); }
+      // The drawn villain (c-villain), when the book has one, keeps the Wolf the same on every page.
+      const villain = sc.wolf ? await loadImage(env, "toon/" + id + "/c-villain.png") : null;
+      if (villain) refs.push(villain);
+      try { out = await drawStory(env, refs, scenePrompt(body.story, slot.slice(1), !!villain), "16:9"); }
       catch (e) { console.error("scene failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this scene. Please try again."); }
     } else if (noPhoto) {
       const text = slot === "c-villain" ? villainPrompt(body.story) : standinPrompt(body.story, slot.slice(2));
