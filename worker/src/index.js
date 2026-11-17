@@ -1,4 +1,4 @@
-import { STORIES, WHO, WHERE, characterPrompt, scenePrompt } from "./stories.js";
+import { STORIES, WHO, WHERE, characterPrompt, standinPrompt, villainPrompt, scenePrompt } from "./stories.js";
 /* Family Board Books: photo storage and cartoon pipeline (Cloudflare Worker + R2, EU jurisdiction).
 
    Storage layout in the R2 bucket:
@@ -221,6 +221,15 @@ async function geminiImages(env, images, text, aspect) {
   throw new Error("Gemini returned no image");
 }
 async function openaiImages(env, images, text, aspect) {
+  if (!images.length) {  // nothing to edit (stand-ins and villains): draw from the words alone
+    const res = await fetch("https://api.openai.com/v1/images/generations", {
+      method: "POST", headers: { Authorization: "Bearer " + env.OPENAI_API_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: env.OPENAI_MODEL || "gpt-image-2", prompt: text, size: aspect === "16:9" ? "1536x1024" : aspect === "3:4" ? "1024x1536" : "1024x1024", quality: env.OPENAI_QUALITY || "medium" })
+    });
+    const j = await res.json();
+    if (!res.ok) throw new Error("OpenAI " + res.status + ": " + (j.error && j.error.message || "error"));
+    return { bytes: unb64(j.data[0].b64_json), type: "image/png" };
+  }
   const fd = new FormData();
   fd.append("model", env.OPENAI_MODEL || "gpt-image-2");
   fd.append("prompt", text);
@@ -439,12 +448,17 @@ async function handle(req, env) {
     const body = await req.json().catch(() => ({}));
     // Story books: c-<role> draws a family member as a story character from their photo,
     // s<n> draws scene n from the approved characters. Prompts come only from stories.js.
+    // Without a photo: c-<role> with standin:true draws our own invented character for that part,
+    // and c-villain draws the story's villain (never a family member).
     const isScene = /^s\d/.test(slot), isChar = /^c-/.test(slot);
-    let story = null;
+    let story = null, noPhoto = isScene;
     if (isScene || isChar) {
       story = STORIES[body.story];
       if (!story) return E(400, "Unknown story.");
-      if (isChar && !story.roles[slot.slice(2)]) return E(400, "Unknown role.");
+      const isVillain = slot === "c-villain";
+      if (isVillain && !story.villain) return E(400, "Unknown role.");
+      if (isChar && !isVillain && !story.roles[slot.slice(2)]) return E(400, "Unknown role.");
+      if (isVillain || (isChar && body.standin === true)) noPhoto = true;
       if (isScene && !story.scenes[slot.slice(1)]) return E(400, "Unknown scene.");
       if (body.who && !WHO.includes(body.who)) return E(400, "Unknown person.");
       if (body.where && !WHERE.includes(body.where)) return E(400, "Unknown position.");
@@ -458,8 +472,8 @@ async function handle(req, env) {
     let style;
     await updateMeta(env, id, m => {
       let s = m.slots[slot];
-      if (isScene && !s) s = m.slots[slot] = { gens: 0 };
-      if (!s || (!s.orig && !isScene)) throw httpErr(404, "Upload the photo first.");
+      if (noPhoto && !s) s = m.slots[slot] = { gens: 0 };
+      if (!s || (!s.orig && !noPhoto)) throw httpErr(404, "Upload the photo first.");
       if (s.pending && Date.now() - s.pending < PENDING_MS) throw httpErr(409, "This picture is already being drawn.");
       if (!m.paid) {
         if (!s.toon && busySlots(m) >= m.freeSlots) throw httpErr(402, "Your free preview is used up. Order your book to see every page.");
@@ -485,6 +499,10 @@ async function handle(req, env) {
       }
       try { out = await drawStory(env, refs, scenePrompt(body.story, slot.slice(1)), "16:9"); }
       catch (e) { console.error("scene failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this scene. Please try again."); }
+    } else if (noPhoto) {
+      const text = slot === "c-villain" ? villainPrompt(body.story) : standinPrompt(body.story, slot.slice(2));
+      try { out = await drawStory(env, [], text, "3:4"); }
+      catch (e) { console.error("stand-in failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this one. Please try again."); }
     } else {
     const obj = await env.BUCKET.get("orig/" + id + "/" + slot);
     if (!obj) { await release(false); return E(404, "Upload the photo first."); }
