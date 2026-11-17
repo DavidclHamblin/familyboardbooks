@@ -63,6 +63,7 @@ export function standinPrompt(story, role) {
 export function villainPrompt(story) {
   const s = STORIES[story];
   return "Draw " + s.villain + ", as a full-body storybook character standing on his hind legs, " + POSE + ". " +
+    "He is a plain wild animal: NO scarf, neckerchief, vest, collar, hat or any other clothing or accessories. " +
     "Style: " + s.style + ". Draw only this one character. No text or letters.";
 }
 
