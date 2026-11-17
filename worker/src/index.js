@@ -463,8 +463,11 @@ async function handle(req, env) {
       if (body.who && !WHO.includes(body.who)) return E(400, "Unknown person.");
       if (body.where && !WHERE.includes(body.where)) return E(400, "Unknown position.");
     }
+    // Our own example artwork (ART_DRAFTS in wrangler.toml) is drawn like a paid book: no free limits.
+    // Each listed draft still needs its secret token, which only we hold.
+    const isArt = (env.ART_DRAFTS || "").split(",").map(x => x.trim()).includes(id);
     let allowance = null;
-    if (!meta.paid) {
+    if (!meta.paid && !isArt) {
       allowance = await freeAllowance(env, req);
       if (!allowance.ok) return E(429, allowance.message);
     }
@@ -475,7 +478,7 @@ async function handle(req, env) {
       if (noPhoto && !s) s = m.slots[slot] = { gens: 0 };
       if (!s || (!s.orig && !noPhoto)) throw httpErr(404, "Upload the photo first.");
       if (s.pending && Date.now() - s.pending < PENDING_MS) throw httpErr(409, "This picture is already being drawn.");
-      if (!m.paid) {
+      if (!m.paid && !isArt) {
         if (!s.toon && busySlots(m) >= m.freeSlots) throw httpErr(402, "Your free preview is used up. Order your book to see every page.");
         if (m.gens >= m.freeGens) throw httpErr(402, "You've used your free redos. Order your book to see every page.");
       } else if (m.gens >= m.freeGens + Object.keys(m.slots).length * 4 + 20) {
