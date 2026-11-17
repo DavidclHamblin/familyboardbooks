@@ -5,7 +5,7 @@
 export const WHO = ["toddler", "baby", "girl", "boy", "child", "woman", "man", "older woman", "older man", "teenager"];
 export const WHERE = ["", "on the left", "on the right", "in the middle", "at the front", "at the back"];
 
-const WOLF = "the Wolf: a lanky, scruffy grey wolf with yellow eyes, a far-too-wide toothy grin and a bushy tail; comical and silly rather than scary";
+const WOLF = "the Wolf: a lanky, shaggy grey wolf with a pale cream chest and muzzle, big round yellow eyes, a black nose, tall pointed ears, a long snout with a far-too-wide grin full of small pointy teeth and a big bushy grey tail; he wears no clothes; comical and silly rather than scary";
 
 export const STORIES = {
   redhood: {
@@ -31,9 +31,9 @@ export const STORIES = {
       6: { cast: ["grandma"], wolf: true, text: "right", desc: "outside a cosy cottage in the woods, the Wolf knocks on the front door; at a side window Grandma peeks out, holding a rolling pin, and spots his grey tail" },
       7: { cast: [], wolf: true, text: "left", desc: "the Wolf lies in Grandma's bed wearing her frilly nightcap and round reading glasses, chuckling, the blanket pulled up to his chin" },
       8: { cast: ["hero"], wolf: true, text: "left", desc: "Little Red, holding a fistful of bluebells, stands beside Grandma's bed looking puzzled; in the bed the Wolf wears a frilly nightcap and round glasses, his big ears poking out, trying to look innocent" },
-      9: { cast: ["hero"], wolf: true, text: "right", desc: "a close, funny moment: the Wolf in the nightcap grins to show his very big teeth while Little Red leans back, eyes wide" },
-      10: { cast: ["grandma", "helper", "hero"], wolf: true, text: "left", desc: "the wardrobe bursts open and Grandma springs out waving a rolling pin, the woodcutter strides in through the cottage door, Little Red cheers, and the Wolf sits bolt upright in the bed looking shocked" },
-      11: { cast: ["grandma", "helper", "hero"], wolf: true, text: "right", desc: "the Wolf runs away over a green hill, the nightcap flying one way and the glasses the other, while Grandma, the woodcutter and Little Red wave from the cottage doorway" },
+      9: { cast: ["hero"], wolf: true, text: "right", desc: "the Wolf, still in Grandma's frilly nightcap and round glasses, leaps out of the bed towards Little Red with his mouth wide open, arms outstretched and the blanket flying, while Little Red leans back in surprise; dramatic but funny, not frightening" },
+      10: { cast: ["grandma", "helper", "hero"], wolf: true, text: "left", desc: "a comical moment in Grandma's bedroom: as the Wolf (in the frilly nightcap) lunges towards Little Red, the wardrobe doors burst open and Grandma springs out and bonks him on the head with her wooden rolling pin, little cartoon stars circling his head and his eyes crossed; Little Red ducks out of the way and the woodcutter strides in through the cottage door behind them" },
+      11: { cast: ["grandma", "helper", "hero"], wolf: true, text: "right", desc: "the Wolf flees over a green hill looking scared and silly, ears flat, tongue flapping and a big bump on his head, the nightcap flying one way and the glasses the other, while Grandma (waving her rolling pin), the woodcutter and Little Red stand together at the cottage door laughing" },
       12: { cast: ["grandma", "helper", "hero"], text: "right", desc: "Grandma, the woodcutter and Little Red sit around a wooden table having honey buns and soup, laughing together in the warm cottage; the red cape hangs on a hook by the door" }
     }
   }
@@ -66,12 +66,16 @@ export function villainPrompt(story) {
     "Style: " + s.style + ". Draw only this one character. No text or letters.";
 }
 
-export function scenePrompt(story, n) {
+// villainRef: true when the drawn villain is sent as the last reference image.
+export function scenePrompt(story, n, villainRef) {
   const s = STORIES[story], sc = s.scenes[n];
-  const refs = sc.cast.map((role, i) => "IMAGE " + (i + 1) + " is " + s.roles[role].name).join("; ");
+  const refs = sc.cast.map((role, i) => "IMAGE " + (i + 1) + " is " + s.roles[role].name + " (wearing " + s.roles[role].costume + ")");
+  if (sc.wolf && villainRef) refs.push("IMAGE " + (sc.cast.length + 1) + " is the Wolf");
   return "Illustrate one wide double-page spread of a children's picture book. Scene: " + sc.desc + ". " +
-    (sc.cast.length ? "The images provided are character references (" + refs + "). Draw each of these characters exactly as in their reference image: the same face, hair, skin tone, age, body, clothes and colours, so a family would instantly recognise them. " : "") +
-    (sc.wolf ? "Also include " + WOLF + ". " : "") +
+    (refs.length ? "The images provided are character reference sheets (" + refs.join("; ") + "). Every character in the scene must be the SAME character as in their reference, copied exactly: " +
+      "the same face, hair colour and style, skin tone, age, glasses or beard, body shape, and exactly the same clothes, patterns and colours. Do not change their outfit, hair or age, and do not invent a different-looking person. " +
+      "Each character appears only once. " : "") +
+    (sc.wolf && !villainRef ? "Also include " + WOLF + ". " : sc.wolf ? "The Wolf looks exactly like his reference: " + WOLF + ". " : "") +
     "Do not add any other people. Keep the " + sc.text + " third of the picture calm and simple (sky, wall or grass) so text can be printed there. " +
     "Style: " + s.style + ". No text, letters or speech bubbles.";
 }
