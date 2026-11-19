@@ -199,6 +199,6 @@ export function scenePrompt(story, n, villainRef) {
       "Do not change their hair or age, and do not invent a different-looking person. Each character appears only once. " : "") +
     (sc.wolf && !villainRef ? "Also include " + s.villain + ". " : sc.wolf ? "Our own characters look exactly like their reference: " + s.villain + ". Only include the ones the scene mentions. " : "") +
     (sc.others ? "Any other people in the scene are small, simple background figures, clearly different from the main characters. " : "Do not add any other people. ") +
-    "Keep the " + sc.text + " third of the picture calm and simple (sky, wall or grass) so text can be printed there. " +
+    "LAYOUT: the words of the story will be printed over the " + sc.text + " third of the picture, so keep that third completely free of characters, faces and important objects: only calm background there (sky, wall, floor or grass). Place every character in the other two thirds. " +
     "Style: " + s.style + ". No text, letters or speech bubbles.";
 }
