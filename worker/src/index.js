@@ -481,7 +481,7 @@ async function handle(req, env) {
       if (!m.paid && !isArt) {
         if (!s.toon && busySlots(m) >= m.freeSlots) throw httpErr(402, "Your free preview is used up. Order your book to see every page.");
         if (m.gens >= m.freeGens) throw httpErr(402, "You've used your free redos. Order your book to see every page.");
-      } else if (m.gens >= m.freeGens + Object.keys(m.slots).length * 4 + 20) {
+      } else if (!isArt && m.gens >= m.freeGens + Object.keys(m.slots).length * 4 + 20) {
         throw httpErr(429, "Too many redos. Please email hello@familyboardbooks.com and we'll help.");
       }
       style = STYLES.includes(body.style) ? body.style : m.style;
