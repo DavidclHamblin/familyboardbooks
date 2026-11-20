@@ -15,13 +15,17 @@ export function printProducts(env) {
   try { return JSON.parse(env.PRINT_PRODUCTS || "{}"); } catch (e) { return {}; }
 }
 
+// Keys pasted into Cloudflare can pick up invisible characters (spaces, non-breaking spaces, zero-width marks).
+// Lulu's keys are plain ASCII, so anything else is dropped before signing in.
+const clean = (s) => String(s || "").replace(/[^\x21-\x7e]/g, "");
+
 let cached = null;  // { env, token, until }: reused while this Worker instance lives
 async function token(env) {
   const which = luluEnv(env);
   if (cached && cached.env === which && cached.until > Date.now()) return cached.token;
   const res = await fetch(HOSTS[which] + TOKEN_PATH, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded", Authorization: "Basic " + btoa(env.LULU_CLIENT_KEY + ":" + env.LULU_CLIENT_SECRET) },
+    headers: { "Content-Type": "application/x-www-form-urlencoded", Authorization: "Basic " + btoa(clean(env.LULU_CLIENT_KEY) + ":" + clean(env.LULU_CLIENT_SECRET)) },
     body: "grant_type=client_credentials"
   });
   const j = await res.json().catch(() => ({}));
