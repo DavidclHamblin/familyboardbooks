@@ -1,0 +1,9 @@
+{
+  "name": "familyboardbooks-api",
+  "private": true,
+  "type": "module",
+  "description": "Photo and cartoon service, shared by the Family Presents sites. Deployed by Cloudflare Workers Builds.",
+  "dependencies": {
+    "@cloudflare/puppeteer": "1.4.0"
+  }
+}
