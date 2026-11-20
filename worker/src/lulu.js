@@ -41,9 +41,10 @@ export async function lulu(env, method, path, body) {
 }
 
 // Sample addresses for price checks only (no person, nothing is ordered).
+// Lulu needs state_code for Spain: the province part of ISO 3166-2 (ES-B = Barcelona).
 const SAMPLE = {
   GB: { name: "Price check", street1: "10 Downing Street", city: "London", postcode: "SW1A 2AA", country_code: "GB", phone_number: "+44 20 7946 0000" },
-  ES: { name: "Price check", street1: "Plaça de Catalunya 1", city: "Barcelona", postcode: "08002", country_code: "ES", phone_number: "+34 930 000 000" }
+  ES: { name: "Price check", street1: "Plaça de Catalunya 1", city: "Barcelona", postcode: "08002", state_code: "B", country_code: "ES", phone_number: "+34 930 000 000" }
 };
 
 // Print cost, postage and VAT for one copy to the UK and Spain, plus the cover size Lulu wants.
@@ -59,6 +60,7 @@ export async function quote(env, product, pkgOverride, pagesOverride) {
       currency: r.data.currency,
       print: r.data.line_item_costs && r.data.line_item_costs[0] && r.data.line_item_costs[0].total_cost_excl_tax,
       postage: r.data.shipping_cost && r.data.shipping_cost.total_cost_excl_tax,
+      fulfilment: r.data.fulfillment_cost && r.data.fulfillment_cost.total_cost_excl_tax,
       fees: (r.data.fees || []).map(f => ({ type: f.fee_type, cost: f.total_cost_excl_tax })),
       totalExVat: r.data.total_cost_excl_tax, vat: r.data.total_tax, total: r.data.total_cost_incl_tax
     } : { error: r.status, detail: r.data };
