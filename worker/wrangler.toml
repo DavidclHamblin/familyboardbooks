@@ -23,6 +23,10 @@ crons = ["17 3 * * *", "*/10 * * * *"]
 [browser]
 binding = "BROWSER"
 
+# Cloudflare Images: smaller screen copies of print-size pictures (free plan: 5,000 a month).
+[images]
+binding = "IMAGES"
+
 # At most 5 new books per minute from one connection.
 [[ratelimits]]
 name = "DRAFT_LIMIT"
