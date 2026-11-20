@@ -151,6 +151,8 @@ function publicStatus(meta) {
     keep: !!meta.keep, pages: meta.pages || null, cover: meta.cover || null,
     photos: Object.keys(meta.slots).filter(s => meta.slots[s].orig),
     cartoons: Object.keys(meta.slots).filter(s => meta.slots[s].toon),
+    // Story scenes drawn at print size (PRINT_IMAGE_SIZE). A paid book redraws its other scenes before printing.
+    printReady: Object.keys(meta.slots).filter(s => meta.slots[s].toon && /^[24]K$/.test(meta.slots[s].size || "")),
     freeLeft: meta.paid ? null : Math.max(0, freeSlots(meta) - busySlots(meta)),
     redosLeft: meta.paid ? null : Math.max(0, meta.freeGens - meta.gens)
   };
@@ -204,11 +206,11 @@ async function openai(env, photo, refs, style) {
 }
 
 // Generic calls: any number of input images plus an instruction. Used by story books.
-async function geminiImages(env, images, text, aspect) {
+async function geminiImages(env, images, text, aspect, size) {
   const model = env.GEMINI_MODEL || "gemini-3.1-flash-image";
   const parts = images.map(r => ({ inline_data: { mime_type: r.type, data: b64(r.bytes) } })).concat([{ text }]);
   const cfg = { responseModalities: ["IMAGE"] };
-  if (aspect) cfg.imageConfig = { aspectRatio: aspect };
+  if (aspect || size) cfg.imageConfig = Object.assign(aspect ? { aspectRatio: aspect } : {}, size ? { imageSize: size } : {});
   const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent", {
     method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
     body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: cfg })
@@ -217,7 +219,7 @@ async function geminiImages(env, images, text, aspect) {
   if (!res.ok) throw new Error("Gemini " + res.status + ": " + (j.error && j.error.message || "error"));
   for (const c of j.candidates || []) for (const p of (c.content && c.content.parts) || []) {
     const d = p.inlineData || p.inline_data;
-    if (d && d.data) return { bytes: unb64(d.data), type: d.mimeType || d.mime_type || "image/png" };
+    if (d && d.data) return { bytes: unb64(d.data), type: d.mimeType || d.mime_type || "image/png", size: size || "1K" };
   }
   throw new Error("Gemini returned no image");
 }
@@ -242,14 +244,16 @@ async function openaiImages(env, images, text, aspect) {
   if (!res.ok) throw new Error("OpenAI " + res.status + ": " + (j.error && j.error.message || "error"));
   return { bytes: unb64(j.data[0].b64_json), type: "image/png" };
 }
-async function drawStory(env, images, text, aspect) {
+// size: Gemini imageSize ("1K" default, "2K", "4K"). OpenAI has no 4K, so a backup drawing comes back small
+// and says so in .size; the print step redraws any picture that isn't print size.
+async function drawStory(env, images, text, aspect, size) {
   const forced = env.ENGINE || "mock";
-  if (forced === "mock") return Object.assign(await mock(env, images[0] || { bytes: new Uint8Array(200), type: "image/png" }), { engine: "mock" });
+  if (forced === "mock") return Object.assign(await mock(env, images[0] || { bytes: new Uint8Array(200), type: "image/png" }), { engine: "mock", size: size || "1K" });
   const first = ENGINES.includes(env.STORY_ENGINE) ? env.STORY_ENGINE : "gemini";
   const order = [first].concat(ENGINES.filter(e => e !== first)).filter(e => hasKey(env, e));
   let lastErr = new Error("No AI key set");
   for (const eng of order) {
-    try { return Object.assign(await (eng === "gemini" ? geminiImages : openaiImages)(env, images, text, aspect), { engine: eng }); }
+    try { return Object.assign(await (eng === "gemini" ? geminiImages : openaiImages)(env, images, text, aspect, size), { engine: eng }); }
     catch (e) { lastErr = e; console.error("story engine failed", eng, e.message); }
   }
   throw lastErr;
@@ -511,10 +515,11 @@ async function handle(req, env) {
       style = STYLES.includes(body.style) ? body.style : m.style;
       m.gens = (m.gens || 0) + 1; s.pending = Date.now();
     });
+    let sizeDrawn = null;  // set below from the drawing (scenes only)
     const release = ok => updateMeta(env, id, m => {
       const s = m.slots[slot]; if (!s) return false;
       delete s.pending;
-      if (ok) { s.toon = true; s.gens = (s.gens || 0) + 1; s.style = style; s.engine = ok; } else m.gens = Math.max(0, (m.gens || 1) - 1);
+      if (ok) { s.toon = true; s.gens = (s.gens || 0) + 1; s.style = style; s.engine = ok; if (sizeDrawn) s.size = sizeDrawn; else delete s.size; } else m.gens = Math.max(0, (m.gens || 1) - 1);
     });
     let out;
     if (isScene) {
@@ -527,7 +532,9 @@ async function handle(req, env) {
       // The drawn villain (c-villain), when the book has one, keeps the Wolf the same on every page.
       const villain = sc.wolf ? await loadImage(env, "toon/" + id + "/c-villain.png") : null;
       if (villain) refs.push(villain);
-      try { out = await drawStory(env, refs, scenePrompt(body.story, slot.slice(1), !!villain), "16:9"); }
+      // Paid books draw their scenes at print size; the free preview and our example art stay at screen size.
+      const size = meta.paid && !isArt ? (env.PRINT_IMAGE_SIZE || "4K") : null;
+      try { out = await drawStory(env, refs, scenePrompt(body.story, slot.slice(1), !!villain), "16:9", size); }
       catch (e) { console.error("scene failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this scene. Please try again."); }
     } else if (noPhoto) {
       const text = slot === "c-villain" ? villainPrompt(body.story) : standinPrompt(body.story, slot.slice(2));
@@ -540,6 +547,7 @@ async function handle(req, env) {
     try { out = isChar ? await drawStory(env, [photo], characterPrompt(body.story, slot.slice(2), body.who, body.where), "3:4") : await makeCartoon(env, photo, style); }
     catch (e) { console.error("cartoon failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this one. Please try again, or try a different photo."); }
     }
+    sizeDrawn = isScene ? (out.engine === "openai" ? "1K" : (out.size || "1K")) : null;
     await env.BUCKET.put("toon/" + id + "/" + slot + ".png", out.bytes, { httpMetadata: { contentType: out.type } });
     if (allowance && out.engine !== "mock") await allowance.record();
     const fresh = await release(out.engine);
