@@ -69,3 +69,6 @@ Hardcover books are printed by Lulu through its Print API. One Lulu account serv
 - Trial run: `GET /api/print/test?part=interior` (or `cover`) makes our example book's PDF at full print size with
   Cloudflare's browser and reports the time and size; the file is at `/api/print/test/interior.pdf`. One run per
   10 minutes; no customer data.
+- Screen copies: `GET /api/drafts/<id>/cartoons/<slot>?w=web` returns a 1600px WebP made once with Cloudflare Images
+  (binding `IMAGES`), so proof pages don't download print-size pictures. Without the binding it sends the full picture.
+- A printed book can only be approved once every story scene is drawn at print size (2K or 4K).

@@ -343,12 +343,14 @@ async function onOrderPaid(env, order) {
   for (const id of ids) {
     if (!ID_RE.test(id)) continue;
     if (!(await getMeta(env, id))) continue;
-    const line = (order.line_items || []).find(l => (l.properties || []).some(a => a.name === "_draft" && String(a.value) === id));
+    // Every line that carries this draft is a printed copy (the book line, plus an "extra copy" line for print products).
+    const copies = (order.line_items || []).filter(l => (l.properties || []).some(a => a.name === "_draft" && String(a.value) === id))
+      .reduce((n, l) => n + (Number(l.quantity) || 0), 0);
     await updateMeta(env, id, meta => {
       if (meta.paid) return false;
       meta.paid = true; meta.paidAt = Date.now(); meta.order = String(order.name || order.id || "");
       // Books that a printer posts keep the delivery address until the draft is deleted.
-      if (productFor(env, meta)) { meta.ship = shippingFrom(order); meta.copies = Math.max(1, Number(line && line.quantity) || 1); }
+      if (productFor(env, meta)) { meta.ship = shippingFrom(order); meta.copies = Math.max(1, Math.min(20, copies || 1)); }
     });
   }
   return ids.length;
@@ -361,7 +363,7 @@ async function handle(req, env) {
   if (m === "OPTIONS") return new Response(null, { status: 204, headers: h });
   const J = (d, s) => json(d, s, h), E = (s, msg) => err(s, msg, h);
 
-  if (path === "/api/health") return J({ ok: true, engine: env.ENGINE || "mock", gemini: !!env.GEMINI_API_KEY, openai: !!env.OPENAI_API_KEY, shopify: !!env.SHOPIFY_WEBHOOK_SECRET, lulu: luluReady(env) ? luluEnv(env) : false });
+  if (path === "/api/health") return J({ ok: true, engine: env.ENGINE || "mock", gemini: !!env.GEMINI_API_KEY, openai: !!env.OPENAI_API_KEY, shopify: !!env.SHOPIFY_WEBHOOK_SECRET, lulu: luluReady(env) ? luluEnv(env) : false, browser: !!env.BROWSER, images: !!env.IMAGES });
 
   // Printer price check (Lulu): print cost, postage and VAT to the UK and Spain, and the cover size.
   // Orders nothing. Products come from PRINT_PRODUCTS; ?pkg= and ?pages= try another Lulu format.
@@ -473,6 +475,10 @@ async function handle(req, env) {
       if (coverJson) meta.cover = JSON.parse(coverJson);
       if (body.approve === true) {
         if (!meta.paid) throw httpErr(402, "Please complete your order first.");
+        // A printed storybook needs every scene drawn at print size before it can be approved.
+        const product = productFor(env, meta), story = product && STORIES[(meta.cover && meta.cover.story) || meta.book.slice(product.bookPrefix.length)];
+        if (story && story.scenes && Object.keys(story.scenes).some(n => { const s = meta.slots["s" + n]; return !s || !s.toon || !/^[24]K$/.test(s.size || ""); }))
+          throw httpErr(409, "Some pictures are still being drawn. Please wait until every page is ready.");
         meta.approvedAt = meta.approvedAt || Date.now();
         if (productFor(env, meta) && !meta.print) meta.print = { key: randomToken(), fileKey: randomId(24) };
       }
@@ -588,12 +594,29 @@ async function handle(req, env) {
     }
     sizeDrawn = isScene ? (out.engine === "openai" ? "1K" : (out.size || "1K")) : null;
     await env.BUCKET.put("toon/" + id + "/" + slot + ".png", out.bytes, { httpMetadata: { contentType: out.type } });
+    await env.BUCKET.delete("toon/" + id + "/" + slot + ".web.webp");  // the old screen copy is out of date
     if (allowance && out.engine !== "mock") await allowance.record();
     const fresh = await release(out.engine);
     return J({ ok: true, slot, ...publicStatus(fresh) });
   }
 
   if (kind === "cartoons" && m === "GET") {
+    // ?w=web: a smaller WebP copy for showing on screen (print-size scenes can be 10 MB or more). Made once with
+    // Cloudflare Images (binding IMAGES) and kept beside the picture; without the binding, the full picture is sent.
+    if (url.searchParams.get("w") === "web" && env.IMAGES) {
+      const webKey = "toon/" + id + "/" + slot + ".web.webp";
+      let web = await env.BUCKET.get(webKey);
+      if (!web) {
+        const full = await env.BUCKET.get("toon/" + id + "/" + slot + ".png");
+        if (!full) return E(404, "Not found");
+        try {
+          const res = (await env.IMAGES.input(full.body).transform({ width: 1600, fit: "scale-down" }).output({ format: "image/webp", quality: 82 })).response();
+          await env.BUCKET.put(webKey, await res.arrayBuffer(), { httpMetadata: { contentType: "image/webp" } });
+          web = await env.BUCKET.get(webKey);
+        } catch (e) { console.error("web copy failed", id, slot, e.message); }
+      }
+      if (web) return new Response(web.body, { headers: Object.assign({ "Content-Type": "image/webp", "Cache-Control": "private, no-store" }, h) });
+    }
     const obj = await env.BUCKET.get("toon/" + id + "/" + slot + ".png");
     if (!obj) return E(404, "Not found");
     return new Response(obj.body, { headers: Object.assign({ "Content-Type": obj.httpMetadata?.contentType || "image/png", "Cache-Control": "private, no-store" }, h) });
