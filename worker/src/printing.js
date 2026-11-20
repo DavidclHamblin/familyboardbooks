@@ -42,21 +42,38 @@ export async function servePrintFile(env, id, key, name, getMeta, timingSafeEqua
   return obj ? new Response(obj.body, { headers: { "Content-Type": "application/pdf", "Cache-Control": "private, no-store" } }) : null;
 }
 
+// Opens one print page in Cloudflare's browser and saves it as PDF. The page sets body data-ready or data-error.
+async function pagePdf(browser, url) {
+  const page = await browser.newPage();
+  try {
+    await page.goto(url, { waitUntil: "load", timeout: 60000 });
+    await page.waitForFunction("document.body.dataset.ready || document.body.dataset.error", { timeout: 120000 });
+    const error = await page.evaluate(() => document.body.dataset.error || "");
+    if (error) throw new Error("print page: " + error);
+    return await page.pdf({ preferCSSPageSize: true, printBackground: true, timeout: 120000 });
+  } finally { await page.close().catch(() => {}); }
+}
+
 async function makePdfs(env, meta, product) {
   const story = (meta.cover && meta.cover.story) || meta.book.slice(product.bookPrefix.length);
   const base = product.printUrl.replace("{story}", encodeURIComponent(story)) + "&d=" + meta.id;
   const browser = await puppeteer.launch(env.BROWSER);
   try {
     for (const part of ["interior", "cover"]) {
-      const page = await browser.newPage();
-      await page.goto(base + "&part=" + part + "#" + encodeURIComponent(meta.print.key), { waitUntil: "load", timeout: 60000 });
-      await page.waitForFunction("document.body.dataset.ready || document.body.dataset.error", { timeout: 120000 });
-      const error = await page.evaluate(() => document.body.dataset.error || "");
-      if (error) throw new Error("print page: " + error);
-      const pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true, timeout: 120000 });
+      const pdf = await pagePdf(browser, base + "&part=" + part + "#" + encodeURIComponent(meta.print.key));
       await env.BUCKET.put("print/" + meta.id + "/" + part + ".pdf", pdf, { httpMetadata: { contentType: "application/pdf" } });
-      await page.close();
     }
+  } finally { await browser.close(); }
+}
+
+// A trial run on our example book (no customer data), with its pictures stretched to full print size (&full=1),
+// so we can see Cloudflare's browser cope with a real-sized book. Saved as print/test/<part>.pdf.
+export async function testPdf(env, product, story, part) {
+  const t0 = Date.now(), browser = await puppeteer.launch(env.BROWSER);
+  try {
+    const pdf = await pagePdf(browser, product.printUrl.replace("{story}", encodeURIComponent(story)) + "&full=1&part=" + part);
+    await env.BUCKET.put("print/test/" + part + ".pdf", pdf, { httpMetadata: { contentType: "application/pdf" } });
+    return { part, story, seconds: Math.round((Date.now() - t0) / 100) / 10, megabytes: Math.round(pdf.byteLength / 1e5) / 10 };
   } finally { await browser.close(); }
 }
 

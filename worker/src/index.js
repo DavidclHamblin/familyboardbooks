@@ -1,6 +1,6 @@
 import { STORIES, WHO, WHERE, characterPrompt, standinPrompt, villainPrompt, scenePrompt } from "./stories.js";
 import { PKG_RE, luluEnv, luluReady, printProducts, quote } from "./lulu.js";
-import { productFor, shippingFrom, enqueue, servePrintFile, runPrintQueue } from "./printing.js";
+import { productFor, shippingFrom, enqueue, servePrintFile, runPrintQueue, testPdf } from "./printing.js";
 /* Family Board Books: photo storage and cartoon pipeline (Cloudflare Worker + R2, EU jurisdiction).
 
    Storage layout in the R2 bucket:
@@ -384,6 +384,28 @@ async function handle(req, env) {
     if (Object.values(q.prices).every(p => !p.error) && !q.cover.error)  // keep only full answers
       await env.BUCKET.put(key, JSON.stringify(q), { httpMetadata: { contentType: "application/json" } });
     return J(Object.assign(q, { product: code, brand: product.brand, name: product.name }));
+  }
+
+  // Trial print run on our example book (no customer data): GET /api/print/test?part=interior|cover.
+  // One run per 10 minutes, because the free plan has 10 browser minutes a day; in between it shows the last result.
+  if (path === "/api/print/test" && m === "GET") {
+    const products = printProducts(env), product = products[url.searchParams.get("product") || "storybook"];
+    if (!product || !product.printUrl || !env.BROWSER) return E(503, "Printing is not set up");
+    const part = url.searchParams.get("part") === "cover" ? "cover" : "interior";
+    const story = (url.searchParams.get("story") || "redhood").replace(/[^a-z]/g, "");
+    const last = await (await env.BUCKET.get("print/test/last.json"))?.json();
+    if (last && last.at > Date.now() - 600000) return J(Object.assign(last, { note: "Last result; the next trial can run after " + new Date(last.at + 600000).toISOString() }));
+    await env.BUCKET.put("print/test/last.json", JSON.stringify({ at: Date.now(), running: part }));
+    let out; try { out = Object.assign({ ok: true }, await testPdf(env, product, story, part)); out.pdf = url.origin + "/api/print/test/" + part + ".pdf"; }
+    catch (e) { out = { ok: false, part, error: String(e.message).slice(0, 500) }; }
+    out.at = Date.now();
+    await env.BUCKET.put("print/test/last.json", JSON.stringify(out));
+    return J(out);
+  }
+  let pt = /^\/api\/print\/test\/(interior|cover)\.pdf$/.exec(path);
+  if (pt && m === "GET") {
+    const obj = await env.BUCKET.get("print/test/" + pt[1] + ".pdf");
+    return obj ? new Response(obj.body, { headers: { "Content-Type": "application/pdf", "Cache-Control": "no-store" } }) : err(404, "Not found");
   }
 
   // Shopify calls this when an order is paid.
