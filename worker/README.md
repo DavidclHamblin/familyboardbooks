@@ -66,3 +66,6 @@ Hardcover books are printed by Lulu through its Print API. One Lulu account serv
   job to Lulu, then follow Lulu's status until shipped. The delivery address is copied from the paid Shopify order
   and deleted with the draft. Lulu downloads the PDFs from `/api/print/files/<draft>/<secret>/…`.
 - At most one book's PDFs are made per run (the free plan allows 10 browser minutes a day).
+- Trial run: `GET /api/print/test?part=interior` (or `cover`) makes our example book's PDF at full print size with
+  Cloudflare's browser and reports the time and size; the file is at `/api/print/test/interior.pdf`. One run per
+  10 minutes; no customer data.
