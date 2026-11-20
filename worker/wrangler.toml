@@ -51,7 +51,7 @@ FREE_IP_DAILY = "12"       # free preview cartoons per day from one internet con
 ART_DRAFTS = "etsdm70z4pt280jwhd7s"  # our own example artwork (Family Storybooks example pages): no free limits, still needs its secret token
 
 # Printer: Lulu Print API, shared by every brand. "sandbox" = Lulu's test system (nothing printed or charged); "live" = real orders.
-LULU_ENV = "sandbox"
+LULU_ENV = "live"
 # Book products printed by Lulu, keyed by our own product code. brand = SKU prefix in Shopify;
 # pkg = Lulu pod_package_id (trim, colour, quality, binding, paper, finish); pages = interior pages;
 # bookPrefix = drafts whose book starts with this are printed by Lulu; printUrl = the brand's print page ({story}).
@@ -60,4 +60,4 @@ PRINT_PRODUCTS = '{"storybook":{"brand":"FST","name":"Family Storybooks hardcove
 
 # Secrets (set with `npx wrangler secret put NAME`, never written in this file):
 #   GEMINI_API_KEY, OPENAI_API_KEY, SHOPIFY_WEBHOOK_SECRET, ADMIN_TOKEN, TURNSTILE_SECRET (optional),
-#   LULU_CLIENT_KEY, LULU_CLIENT_SECRET (one Lulu account for every brand; sandbox keys while LULU_ENV = "sandbox")
+#   LULU_CLIENT_KEY, LULU_CLIENT_SECRET (one Lulu account for every brand; live keys since 20 Nov 2026; sandbox keys only with LULU_ENV = "sandbox")
