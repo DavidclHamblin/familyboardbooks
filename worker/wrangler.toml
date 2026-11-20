@@ -35,6 +35,7 @@ FREE_SLOTS = "6"           # free cartoons before paying (two pages)
 FREE_GENS = "10"           # free tries in total, so a few redos
 UNPAID_DAYS = "14"         # unpaid previews are deleted after this many days
 STORY_ENGINE = "gemini"     # model for story-book characters and scenes (the other is the backup)
+PRINT_IMAGE_SIZE = "4K"    # paid storybooks draw their scenes at this Gemini size for printing (free preview stays 1K)
 FREE_DAILY_CAP = "150"     # free preview cartoons per day for the whole site (cost ceiling)
 FREE_IP_DAILY = "12"       # free preview cartoons per day from one internet connection
 ART_DRAFTS = "etsdm70z4pt280jwhd7s"  # our own example artwork (Family Storybooks example pages): no free limits, still needs its secret token
