@@ -60,3 +60,9 @@ Hardcover books are printed by Lulu through its Print API. One Lulu account serv
   A new brand adds rows here.
 - Price check: `GET /api/print/quote?product=storybook` gives print cost, postage and VAT to the UK and Spain,
   and the cover size. `&pkg=` and `&pages=` try another Lulu format. It orders nothing; answers are kept a day.
+- Sending orders (`src/printing.js`): when a customer approves a paid book whose draft `book` starts with a
+  product's `bookPrefix`, the book joins the print queue. Every 10 minutes the cron takes each queued book one step:
+  make the two PDFs with Cloudflare's built-in browser (binding `BROWSER`, from the product's `printUrl`), send the
+  job to Lulu, then follow Lulu's status until shipped. The delivery address is copied from the paid Shopify order
+  and deleted with the draft. Lulu downloads the PDFs from `/api/print/files/<draft>/<secret>/…`.
+- At most one book's PDFs are made per run (the free plan allows 10 browser minutes a day).

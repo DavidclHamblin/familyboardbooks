@@ -1,5 +1,6 @@
 import { STORIES, WHO, WHERE, characterPrompt, standinPrompt, villainPrompt, scenePrompt } from "./stories.js";
 import { PKG_RE, luluEnv, luluReady, printProducts, quote } from "./lulu.js";
+import { productFor, shippingFrom, enqueue, servePrintFile, runPrintQueue } from "./printing.js";
 /* Family Board Books: photo storage and cartoon pipeline (Cloudflare Worker + R2, EU jurisdiction).
 
    Storage layout in the R2 bucket:
@@ -126,7 +127,9 @@ async function authDraft(env, req, id) {
   const meta = await getMeta(env, id);
   if (!meta) return { error: err(404, "Not found") };
   const m = /^Bearer (.+)$/.exec(req.headers.get("Authorization") || "");
-  if (!m || !timingSafeEqual(await sha256(m[1]), meta.tokenHash)) return { error: err(403, "Not allowed") };
+  // The print key (made when a book is approved) lets our print page read the book, but change nothing.
+  const printKey = m && req.method === "GET" && meta.print && meta.print.key && timingSafeEqual(m[1], meta.print.key);
+  if (!m || !(printKey || timingSafeEqual(await sha256(m[1]), meta.tokenHash))) return { error: err(403, "Not allowed") };
   return { meta };
 }
 async function deletePrefix(env, prefix) {
@@ -142,7 +145,8 @@ async function deletePrefix(env, prefix) {
 async function deleteDraft(env, id) {
   await deletePrefix(env, "orig/" + id + "/");
   await deletePrefix(env, "toon/" + id + "/");
-  await env.BUCKET.delete("meta/" + id + ".json");
+  await deletePrefix(env, "print/" + id + "/");
+  await env.BUCKET.delete(["meta/" + id + ".json", "print/queue/" + id]);
 }
 
 function publicStatus(meta) {
@@ -154,7 +158,8 @@ function publicStatus(meta) {
     // Story scenes drawn at print size (PRINT_IMAGE_SIZE). A paid book redraws its other scenes before printing.
     printReady: Object.keys(meta.slots).filter(s => meta.slots[s].toon && /^[24]K$/.test(meta.slots[s].size || "")),
     freeLeft: meta.paid ? null : Math.max(0, freeSlots(meta) - busySlots(meta)),
-    redosLeft: meta.paid ? null : Math.max(0, meta.freeGens - meta.gens)
+    redosLeft: meta.paid ? null : Math.max(0, meta.freeGens - meta.gens),
+    print: meta.print ? { status: meta.print.status || (meta.print.pdfAt ? "PDF_READY" : "QUEUED"), tracking: meta.print.tracking || [] } : null
   };
 }
 function toonCount(meta) { return Object.values(meta.slots).filter(s => s.toon).length; }
@@ -338,9 +343,12 @@ async function onOrderPaid(env, order) {
   for (const id of ids) {
     if (!ID_RE.test(id)) continue;
     if (!(await getMeta(env, id))) continue;
+    const line = (order.line_items || []).find(l => (l.properties || []).some(a => a.name === "_draft" && String(a.value) === id));
     await updateMeta(env, id, meta => {
       if (meta.paid) return false;
       meta.paid = true; meta.paidAt = Date.now(); meta.order = String(order.name || order.id || "");
+      // Books that a printer posts keep the delivery address until the draft is deleted.
+      if (productFor(env, meta)) { meta.ship = shippingFrom(order); meta.copies = Math.max(1, Number(line && line.quantity) || 1); }
     });
   }
   return ids.length;
@@ -385,6 +393,10 @@ async function handle(req, env) {
     const n = await onOrderPaid(env, JSON.parse(new TextDecoder().decode(raw)));
     return json({ ok: true, drafts: n });
   }
+
+  // Lulu fetches a book's print files from here (the address holds the book's secret file key).
+  let pf = /^\/api\/print\/files\/([a-z0-9]{20})\/([a-z0-9]{24})\/(interior|cover)\.pdf$/.exec(path);
+  if (pf && m === "GET") return (await servePrintFile(env, pf[1], pf[2], pf[3] + ".pdf", getMeta, timingSafeEqual)) || err(404, "Not found");
 
   // Status changes from us or the printer integration: printed, delivered.
   let mm = /^\/api\/admin\/drafts\/([a-z0-9]+)\/status$/.exec(path);
@@ -437,8 +449,13 @@ async function handle(req, env) {
       if (typeof body.keep === "boolean") meta.keep = body.keep;
       if (pagesJson) meta.pages = JSON.parse(pagesJson);
       if (coverJson) meta.cover = JSON.parse(coverJson);
-      if (body.approve === true) { if (!meta.paid) throw httpErr(402, "Please complete your order first."); meta.approvedAt = Date.now(); }
+      if (body.approve === true) {
+        if (!meta.paid) throw httpErr(402, "Please complete your order first.");
+        meta.approvedAt = meta.approvedAt || Date.now();
+        if (productFor(env, meta) && !meta.print) meta.print = { key: randomToken(), fileKey: randomId(24) };
+      }
     });
+    if (body.approve === true && updated.print && !updated.print.pdfAt) await enqueue(env, id);
     return J(publicStatus(updated));
   }
 
@@ -597,5 +614,8 @@ export default {
       console.error(e && e.stack || e); return err(500, "Something went wrong. Please try again.", h);
     }
   },
-  async scheduled(event, env, ctx) { ctx.waitUntil(cleanup(env)); }
+  async scheduled(event, env, ctx) {
+    if (event.cron === "17 3 * * *") ctx.waitUntil(cleanup(env));
+    else ctx.waitUntil(runPrintQueue(env, updateMeta).then(notes => notes.length && console.log("print queue", notes.join(" | "))));
+  }
 };

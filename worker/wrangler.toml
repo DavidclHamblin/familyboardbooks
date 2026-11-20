@@ -14,8 +14,14 @@ bucket_name = "fbb-photos"
 jurisdiction = "eu"
 
 # Daily clean-up (03:17 UTC): unpaid previews, printed originals, delivered books.
+# Every 10 minutes: the print queue (make PDFs, send to Lulu, follow Lulu's status).
 [triggers]
-crons = ["17 3 * * *"]
+crons = ["17 3 * * *", "*/10 * * * *"]
+
+# Cloudflare's built-in browser (Browser Run), which saves a book's print page as PDF.
+# The free plan allows 10 browser minutes a day; one book takes well under a minute.
+[browser]
+binding = "BROWSER"
 
 # At most 5 new books per minute from one connection.
 [[ratelimits]]
@@ -43,9 +49,10 @@ ART_DRAFTS = "etsdm70z4pt280jwhd7s"  # our own example artwork (Family Storybook
 # Printer: Lulu Print API, shared by every brand. "sandbox" = Lulu's test system (nothing printed or charged); "live" = real orders.
 LULU_ENV = "sandbox"
 # Book products printed by Lulu, keyed by our own product code. brand = SKU prefix in Shopify;
-# pkg = Lulu pod_package_id (trim, colour, quality, binding, paper, finish); pages = interior pages.
+# pkg = Lulu pod_package_id (trim, colour, quality, binding, paper, finish); pages = interior pages;
+# bookPrefix = drafts whose book starts with this are printed by Lulu; printUrl = the brand's print page ({story}).
 # A new brand (e.g. learn-to-read books, FLR) adds its own rows here.
-PRINT_PRODUCTS = '{"storybook":{"brand":"FST","name":"Family Storybooks hardcover, 8.5 in square","pkg":"0850X0850FCPRECW080CW444GXX","pages":28}}'
+PRINT_PRODUCTS = '{"storybook":{"brand":"FST","name":"Family Storybooks hardcover, 8.5 in square","pkg":"0850X0850FCPRECW080CW444GXX","pages":28,"bookPrefix":"fst-","printUrl":"https://www.familystorybooks.co.uk/print.html?story={story}"}}'
 
 # Secrets (set with `npx wrangler secret put NAME`, never written in this file):
 #   GEMINI_API_KEY, OPENAI_API_KEY, SHOPIFY_WEBHOOK_SECRET, ADMIN_TOKEN, TURNSTILE_SECRET (optional),
