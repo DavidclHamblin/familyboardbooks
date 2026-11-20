@@ -47,3 +47,16 @@ they are sent to the model with every photo so all cartoons share one look.
 
 `npx wrangler dev` (with a `.dev.vars` file setting `ALLOWED_ORIGINS="http://localhost:8765"`), serve `dist/`
 on port 8765, and in the browser console run `localStorage.setItem("fbb-api","http://127.0.0.1:8787")`.
+
+## Printing (Lulu)
+
+Hardcover books are printed by Lulu through its Print API. One Lulu account serves every brand.
+
+- Secrets: `LULU_CLIENT_KEY` and `LULU_CLIENT_SECRET` (Cloudflare → Workers & Pages → familyboardbooks-api →
+  Settings → Variables and Secrets, type Secret).
+- `LULU_ENV` in `wrangler.toml`: `sandbox` (Lulu's test system, nothing printed or charged) or `live`.
+  Sandbox and live have different keys.
+- `PRINT_PRODUCTS` in `wrangler.toml`: one row per book product (brand prefix, Lulu `pod_package_id`, pages).
+  A new brand adds rows here.
+- Price check: `GET /api/print/quote?product=storybook` gives print cost, postage and VAT to the UK and Spain,
+  and the cover size. `&pkg=` and `&pages=` try another Lulu format. It orders nothing; answers are kept a day.

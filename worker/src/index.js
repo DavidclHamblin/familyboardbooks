@@ -1,4 +1,5 @@
 import { STORIES, WHO, WHERE, characterPrompt, standinPrompt, villainPrompt, scenePrompt } from "./stories.js";
+import { PKG_RE, luluEnv, luluReady, printProducts, quote } from "./lulu.js";
 /* Family Board Books: photo storage and cartoon pipeline (Cloudflare Worker + R2, EU jurisdiction).
 
    Storage layout in the R2 bucket:
@@ -348,7 +349,30 @@ async function handle(req, env) {
   if (m === "OPTIONS") return new Response(null, { status: 204, headers: h });
   const J = (d, s) => json(d, s, h), E = (s, msg) => err(s, msg, h);
 
-  if (path === "/api/health") return J({ ok: true, engine: env.ENGINE || "mock", gemini: !!env.GEMINI_API_KEY, openai: !!env.OPENAI_API_KEY, shopify: !!env.SHOPIFY_WEBHOOK_SECRET });
+  if (path === "/api/health") return J({ ok: true, engine: env.ENGINE || "mock", gemini: !!env.GEMINI_API_KEY, openai: !!env.OPENAI_API_KEY, shopify: !!env.SHOPIFY_WEBHOOK_SECRET, lulu: luluReady(env) ? luluEnv(env) : false });
+
+  // Printer price check (Lulu): print cost, postage and VAT to the UK and Spain, and the cover size.
+  // Orders nothing. Products come from PRINT_PRODUCTS; ?pkg= and ?pages= try another Lulu format.
+  // Answers are kept for a day, so repeat visits don't call Lulu again.
+  if (path === "/api/print/quote" && m === "GET") {
+    if (!luluReady(env)) return E(503, "Lulu keys are not set yet");
+    const products = printProducts(env), code = url.searchParams.get("product") || Object.keys(products)[0];
+    const product = products[code];
+    if (!product) return E(404, "Unknown product. Products: " + Object.keys(products).join(", "));
+    const pkg = (url.searchParams.get("pkg") || product.pkg || "").toUpperCase(), pages = parseInt(url.searchParams.get("pages") || product.pages, 10);
+    if (!PKG_RE.test(pkg) || !(pages >= 24 && pages <= 200)) return E(400, "Bad pkg or pages");
+    const key = "print/quote/" + luluEnv(env) + "-" + pkg + "-" + pages + ".json";
+    const hit = await env.BUCKET.get(key);
+    if (hit && Date.parse(hit.uploaded) > Date.now() - 86400000) return J(Object.assign(await hit.json(), { product: code, cached: true }));
+    if (env.DRAFT_LIMIT) {
+      const { success } = await env.DRAFT_LIMIT.limit({ key: "quote:" + (req.headers.get("CF-Connecting-IP") || "?") });
+      if (!success) return E(429, "Too many price checks, try again in a minute");
+    }
+    let q; try { q = await quote(env, product, pkg, pages); } catch (e) { return E(502, e.message); }
+    if (Object.values(q.prices).every(p => !p.error) && !q.cover.error)  // keep only full answers
+      await env.BUCKET.put(key, JSON.stringify(q), { httpMetadata: { contentType: "application/json" } });
+    return J(Object.assign(q, { product: code, brand: product.brand, name: product.name }));
+  }
 
   // Shopify calls this when an order is paid.
   if (path === "/api/shopify/orders-paid" && m === "POST") {
