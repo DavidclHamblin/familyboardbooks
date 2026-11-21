@@ -1098,5 +1098,1186 @@ export const READERS = {
     }
    }
   }
+ },
+ "s4-tent": {
+  "title": "The tent in the garden",
+  "brand": "FLR",
+  "stage": 4,
+  "style": "a bright, friendly early-reader illustration: clean soft ink outlines, cheerful flat colours with gentle shading, simple uncluttered backgrounds, expressive happy faces and slightly simplified shapes, the same look on every page. Not 3D, not anime, not photographic, and not like any animated film or existing book series",
+  "roles": {
+   "child": {
+    "name": "the child",
+    "costume": "a sunny yellow T-shirt, blue jeans and red trainers",
+    "standin": "a cheerful five-year-old child with a round face, rosy cheeks and short curly brown hair"
+   },
+   "adult": {
+    "name": "the grown-up",
+    "costume": "a green jumper, dark trousers and comfortable brown shoes",
+    "standin": "a friendly, smiling grown-up in their thirties with short dark hair"
+   },
+   "pet": {
+    "name": "the pet",
+    "costume": "nothing at all, just their own fur or feathers and a plain red collar if they wear one",
+    "standin": "a small scruffy brown and white dog with floppy ears and a waggy tail"
+   }
+  },
+  "scenes": {
+   "1": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the child and the grown-up pull a rolled-up green tent out of a garden shed on a sunny afternoon; the pet watches"
+   },
+   "2": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child hammers a tent peg with a little mallet while the grown-up holds up the tent poles; the tent is half up"
+   },
+   "3": {
+    "cast": [
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "Inside the little tent: a sleeping bag, a torch and a big pillow; the pet has already curled up on the pillow"
+   },
+   "4": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "Dusk in the garden; the grown-up and the child sit in the open tent with a glowing lantern, mugs of hot milk and a plate of biscuits"
+   },
+   "5": {
+    "cast": [
+     "child"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "Night; the child sits up in the sleeping bag, eyes wide, holding a torch, listening; shadows of plants on the tent wall"
+   },
+   "6": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child and the grown-up creep across the dark lawn, the torch beam lighting up wet grass"
+   },
+   "7": {
+    "cast": [
+     "child"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "The torch beam shows a small hedgehog nibbling in the grass; the child smiles in surprise"
+   },
+   "8": {
+    "cast": [
+     "child"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "Close-up: the hedgehog looks up at the child, nose twitching; the child kneels and keeps very still"
+   },
+   "9": {
+    "cast": [
+     "child",
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the child gently holds the pet back; the hedgehog trundles off into a flower bed"
+   },
+   "10": {
+    "cast": [
+     "child",
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "The tent glowing softly at night; inside, the child and the pet asleep together; the moon and stars above the garden"
+   }
+  }
+ },
+ "s4-snow": {
+  "title": "Snow day",
+  "brand": "FLR",
+  "stage": 4,
+  "style": "a bright, friendly early-reader illustration: clean soft ink outlines, cheerful flat colours with gentle shading, simple uncluttered backgrounds, expressive happy faces and slightly simplified shapes, the same look on every page. Not 3D, not anime, not photographic, and not like any animated film or existing book series",
+  "roles": {
+   "child": {
+    "name": "the child",
+    "costume": "a sunny yellow T-shirt, blue jeans and red trainers",
+    "standin": "a cheerful five-year-old child with a round face, rosy cheeks and short curly brown hair",
+    "outfit3": "a red woolly hat, a thick blue winter coat, mittens and black snow boots"
+   },
+   "adult": {
+    "name": "the grown-up",
+    "costume": "a green jumper, dark trousers and comfortable brown shoes",
+    "standin": "a friendly, smiling grown-up in their thirties with short dark hair"
+   },
+   "pet": {
+    "name": "the pet",
+    "costume": "nothing at all, just their own fur or feathers and a plain red collar if they wear one",
+    "standin": "a small scruffy brown and white dog with floppy ears and a waggy tail"
+   }
+  },
+  "scenes": {
+   "1": {
+    "cast": [
+     "child"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the child in pyjamas presses their nose to a frosty window; outside, the garden is deep in fresh snow",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "2": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child now in a red woolly hat, scarf and coat; the grown-up carries a wooden sledge out of the shed",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "3": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the child and the grown-up trudge up a snowy hill pulling the sledge; the pet bounds ahead in the snow",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "4": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child whizzes down the snowy hill on the sledge, arms up and laughing; the grown-up waves from the top",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "5": {
+    "cast": [
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the pet leaps into a snowdrift and comes out covered in white snow from nose to tail",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "6": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child and the grown-up roll two big snowballs; a snowman is taking shape",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "7": {
+    "cast": [
+     "child"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the child pushes a carrot nose into the snowman's face; it wears an old hat and two pebble eyes",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "8": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "A snowball bursts on the grown-up's shoulder; the grown-up spins round, pretending to be cross; the child hides behind the snowman, giggling",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "9": {
+    "cast": [
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "A happy snowball fight in the park, snowballs flying; the pet chases them",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "10": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "In a cosy kitchen, the child and the grown-up wrapped in blankets sip hot chocolate; wet mittens dry on the radiator; the pet snoozes"
+   }
+  }
+ },
+ "s4-shells": {
+  "title": "Sand and shells",
+  "brand": "FLR",
+  "stage": 4,
+  "style": "a bright, friendly early-reader illustration: clean soft ink outlines, cheerful flat colours with gentle shading, simple uncluttered backgrounds, expressive happy faces and slightly simplified shapes, the same look on every page. Not 3D, not anime, not photographic, and not like any animated film or existing book series",
+  "roles": {
+   "child": {
+    "name": "the child",
+    "costume": "a sunny yellow T-shirt, blue jeans and red trainers",
+    "standin": "a cheerful five-year-old child with a round face, rosy cheeks and short curly brown hair"
+   },
+   "adult": {
+    "name": "the grown-up",
+    "costume": "a green jumper, dark trousers and comfortable brown shoes",
+    "standin": "a friendly, smiling grown-up in their thirties with short dark hair"
+   },
+   "pet": {
+    "name": "the pet",
+    "costume": "nothing at all, just their own fur or feathers and a plain red collar if they wear one",
+    "standin": "a small scruffy brown and white dog with floppy ears and a waggy tail"
+   }
+  },
+  "scenes": {
+   "1": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "A sunny sandy beach with gentle waves; the child, the grown-up and the pet arrive carrying a bucket, spade and towels"
+   },
+   "2": {
+    "cast": [
+     "child"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child kneels and digs in the sand with a spade, a red bucket beside them"
+   },
+   "3": {
+    "cast": [
+     "child"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the child lifts the bucket off a perfect sandcastle; two more stand next to it"
+   },
+   "4": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child and the grown-up walk along the shoreline towards some rocks, looking down for shells"
+   },
+   "5": {
+    "cast": [
+     "child"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the child holds out three shells in a cupped hand: a pink one, a long thin one and one with a hole"
+   },
+   "6": {
+    "cast": [
+     "child"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "Looking into a clear rock pool: a small red crab with raised claws, seaweed around it; the child points"
+   },
+   "7": {
+    "cast": [
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "The crab pinches the pet's nose; the pet jumps back with a startled face"
+   },
+   "8": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the pet splashes into the shallow waves; the child and the grown-up laugh on the sand"
+   },
+   "9": {
+    "cast": [
+     "child"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "The tide has washed over the place where the sandcastles were; only a flat bump and the red bucket remain; the child looks surprised"
+   },
+   "10": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "Evening at the beach; the child, the grown-up and the pet walk home, the child holding the shells, a pink sunset over the sea"
+   }
+  }
+ },
+ "s4-bus": {
+  "title": "The bus trip",
+  "brand": "FLR",
+  "stage": 4,
+  "style": "a bright, friendly early-reader illustration: clean soft ink outlines, cheerful flat colours with gentle shading, simple uncluttered backgrounds, expressive happy faces and slightly simplified shapes, the same look on every page. Not 3D, not anime, not photographic, and not like any animated film or existing book series",
+  "roles": {
+   "child": {
+    "name": "the child",
+    "costume": "a sunny yellow T-shirt, blue jeans and red trainers",
+    "standin": "a cheerful five-year-old child with a round face, rosy cheeks and short curly brown hair"
+   },
+   "adult": {
+    "name": "the grown-up",
+    "costume": "a green jumper, dark trousers and comfortable brown shoes",
+    "standin": "a friendly, smiling grown-up in their thirties with short dark hair"
+   }
+  },
+  "scenes": {
+   "1": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "A bus stop on a town street; the child and the grown-up wait as a red double-decker bus comes round the corner"
+   },
+   "2": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the grown-up shows tickets to a smiling bus driver; the child is already heading for the stairs"
+   },
+   "3": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the child sits at the big front window on the top deck of the bus, hands out like steering a wheel; the grown-up beside them"
+   },
+   "4": {
+    "cast": [],
+    "text": "left",
+    "others": false,
+    "desc": "View from the top deck: shops, a park and a small dog in a red coat walking on the pavement"
+   },
+   "5": {
+    "cast": [
+     "child"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "The bus climbs a steep hill; inside, the child leans forward as if to help it"
+   },
+   "6": {
+    "cast": [
+     "child"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "From the top deck: a wide view of a little town; the child points at a block of flats in the distance"
+   },
+   "7": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "The bus at its last stop beside a large park with a pond and ducks; the child and the grown-up step off"
+   },
+   "8": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child and the grown-up sit on a picnic blanket on the grass with sandwiches, crisps and drinks, ducks nearby"
+   },
+   "9": {
+    "cast": [
+     "child"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the child runs up the stairs of the bus to grab the front seat on the top deck again"
+   },
+   "10": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "Late afternoon light on the top deck; the child asleep against the grown-up's arm; the grown-up smiles"
+   }
+  }
+ },
+ "s4-tarts": {
+  "title": "The jam tarts",
+  "brand": "FLR",
+  "stage": 4,
+  "style": "a bright, friendly early-reader illustration: clean soft ink outlines, cheerful flat colours with gentle shading, simple uncluttered backgrounds, expressive happy faces and slightly simplified shapes, the same look on every page. Not 3D, not anime, not photographic, and not like any animated film or existing book series",
+  "roles": {
+   "child": {
+    "name": "the child",
+    "costume": "a sunny yellow T-shirt, blue jeans and red trainers",
+    "standin": "a cheerful five-year-old child with a round face, rosy cheeks and short curly brown hair",
+    "outfit3": "a yellow T-shirt and jeans with a red striped apron, a little flour on the nose"
+   },
+   "adult": {
+    "name": "the grown-up",
+    "costume": "a green jumper, dark trousers and comfortable brown shoes",
+    "standin": "a friendly, smiling grown-up in their thirties with short dark hair"
+   },
+   "pet": {
+    "name": "the pet",
+    "costume": "nothing at all, just their own fur or feathers and a plain red collar if they wear one",
+    "standin": "a small scruffy brown and white dog with floppy ears and a waggy tail"
+   }
+  },
+  "scenes": {
+   "1": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "A kitchen counter with flour, butter, a jar of strawberry jam and a mixing bowl; the child and the grown-up tie on aprons"
+   },
+   "2": {
+    "cast": [
+     "child",
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child rolls out pastry with a rolling pin, flour everywhere; the pet watches from the floor",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "3": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the child spoons jam into pastry cases in a tart tin; the grown-up cuts circles with a cutter",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "4": {
+    "cast": [
+     "child"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child peers through the oven door at the tarts baking; a warm glow from the oven",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "5": {
+    "cast": [],
+    "text": "right",
+    "others": false,
+    "desc": "Twelve golden jam tarts cool on a rack on the kitchen table",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "6": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child points at the tarts one by one, counting; the grown-up dries a bowl",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "7": {
+    "cast": [
+     "child"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the child looks shocked at the cooling rack: there is an empty gap where one tart was",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "8": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child and the grown-up turn slowly to look at the pet, who sits very still, trying to look innocent",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "9": {
+    "cast": [
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "Close-up of the pet with a blob of red jam on the chin and a guilty look",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "10": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child and the grown-up sit at the table eating jam tarts and laughing; the pet licks its lips under the table"
+   }
+  }
+ },
+ "s4-frog": {
+  "title": "Frog in the pond",
+  "brand": "FLR",
+  "stage": 4,
+  "style": "a bright, friendly early-reader illustration: clean soft ink outlines, cheerful flat colours with gentle shading, simple uncluttered backgrounds, expressive happy faces and slightly simplified shapes, the same look on every page. Not 3D, not anime, not photographic, and not like any animated film or existing book series",
+  "roles": {
+   "child": {
+    "name": "the child",
+    "costume": "a sunny yellow T-shirt, blue jeans and red trainers",
+    "standin": "a cheerful five-year-old child with a round face, rosy cheeks and short curly brown hair"
+   },
+   "adult": {
+    "name": "the grown-up",
+    "costume": "a green jumper, dark trousers and comfortable brown shoes",
+    "standin": "a friendly, smiling grown-up in their thirties with short dark hair"
+   },
+   "pet": {
+    "name": "the pet",
+    "costume": "nothing at all, just their own fur or feathers and a plain red collar if they wear one",
+    "standin": "a small scruffy brown and white dog with floppy ears and a waggy tail"
+   }
+  },
+  "scenes": {
+   "1": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "A green park with a reedy pond; the pet runs ahead of the child and the grown-up along the path"
+   },
+   "2": {
+    "cast": [
+     "child"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "A small green frog sits on a large lily pad in the pond; the child crouches on the bank, pointing"
+   },
+   "3": {
+    "cast": [],
+    "text": "right",
+    "others": false,
+    "desc": "Close-up of the frog: big golden eyes, long folded legs, shiny green skin"
+   },
+   "4": {
+    "cast": [],
+    "text": "left",
+    "others": false,
+    "desc": "The frog leaps from one lily pad to another with a little splash"
+   },
+   "5": {
+    "cast": [
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the pet jumps into the edge of the pond after the frog, sending up a big splash"
+   },
+   "6": {
+    "cast": [
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "The frog hops onto a mossy log and slips into tall reeds; the pet stands in the shallow water, confused"
+   },
+   "7": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the grown-up lifts dripping the pet out onto the grass; the child laughs"
+   },
+   "8": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the pet shakes off water in a spray of droplets; the child and the grown-up shield their faces"
+   },
+   "9": {
+    "cast": [
+     "child"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the child sits very still on the bank; the frog peeks out of the reeds and hops onto a stone near them"
+   },
+   "10": {
+    "cast": [
+     "child",
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "The frog sits on a stone near the child, both looking at each other; the pet lies drying in the sun"
+   }
+  }
+ },
+ "s4-storm": {
+  "title": "The storm",
+  "brand": "FLR",
+  "stage": 4,
+  "style": "a bright, friendly early-reader illustration: clean soft ink outlines, cheerful flat colours with gentle shading, simple uncluttered backgrounds, expressive happy faces and slightly simplified shapes, the same look on every page. Not 3D, not anime, not photographic, and not like any animated film or existing book series",
+  "roles": {
+   "child": {
+    "name": "the child",
+    "costume": "a sunny yellow T-shirt, blue jeans and red trainers",
+    "standin": "a cheerful five-year-old child with a round face, rosy cheeks and short curly brown hair"
+   },
+   "adult": {
+    "name": "the grown-up",
+    "costume": "a green jumper, dark trousers and comfortable brown shoes",
+    "standin": "a friendly, smiling grown-up in their thirties with short dark hair"
+   },
+   "pet": {
+    "name": "the pet",
+    "costume": "nothing at all, just their own fur or feathers and a plain red collar if they wear one",
+    "standin": "a small scruffy brown and white dog with floppy ears and a waggy tail"
+   }
+  },
+  "scenes": {
+   "1": {
+    "cast": [],
+    "text": "right",
+    "others": false,
+    "desc": "Outside a cosy house at night, trees bending in a strong wind, dark clouds rushing past the moon"
+   },
+   "2": {
+    "cast": [
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "Rain lashes a bedroom window; the pet peeks out from under the bed"
+   },
+   "3": {
+    "cast": [
+     "child"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "A bright flash of lightning lights up the room; the child jumps in surprise"
+   },
+   "4": {
+    "cast": [
+     "child"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "The room goes dark; only the child's wide eyes and a faint window light are seen"
+   },
+   "5": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the grown-up comes in with a torch, its beam lighting a friendly path across the room to the child"
+   },
+   "6": {
+    "cast": [],
+    "text": "left",
+    "others": false,
+    "desc": "Candles in jars glow on a shelf; the room is warm and golden"
+   },
+   "7": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the child and the grown-up under a blanket den on the bed, lit by the torch; the pet crawls in to join them"
+   },
+   "8": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the grown-up holds the torch under their chin to tell a story; the child listens, hugging the pet"
+   },
+   "9": {
+    "cast": [],
+    "text": "right",
+    "others": false,
+    "desc": "The window shows the storm passing, the moon peeking out from the clouds"
+   },
+   "10": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "The bedroom light is on again; the child and the pet are asleep in the blanket den; the grown-up smiles and switches the light off"
+   }
+  }
+ },
+ "s4-den": {
+  "title": "The den in the wood",
+  "brand": "FLR",
+  "stage": 4,
+  "style": "a bright, friendly early-reader illustration: clean soft ink outlines, cheerful flat colours with gentle shading, simple uncluttered backgrounds, expressive happy faces and slightly simplified shapes, the same look on every page. Not 3D, not anime, not photographic, and not like any animated film or existing book series",
+  "roles": {
+   "child": {
+    "name": "the child",
+    "costume": "a sunny yellow T-shirt, blue jeans and red trainers",
+    "standin": "a cheerful five-year-old child with a round face, rosy cheeks and short curly brown hair"
+   },
+   "adult": {
+    "name": "the grown-up",
+    "costume": "a green jumper, dark trousers and comfortable brown shoes",
+    "standin": "a friendly, smiling grown-up in their thirties with short dark hair"
+   },
+   "pet": {
+    "name": "the pet",
+    "costume": "nothing at all, just their own fur or feathers and a plain red collar if they wear one",
+    "standin": "a small scruffy brown and white dog with floppy ears and a waggy tail"
+   }
+  },
+  "scenes": {
+   "1": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "A sunny woodland path with tall trees and ferns; the child, the grown-up and the pet walking along"
+   },
+   "2": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child points at a big fallen tree with lots of sticks around it; the grown-up nods"
+   },
+   "3": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the child and the grown-up lean long sticks against a fallen log to make a den frame"
+   },
+   "4": {
+    "cast": [
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the pet proudly carries a tiny twig in its mouth"
+   },
+   "5": {
+    "cast": [
+     "child"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the child drapes big green ferns over the sticks; the den looks like a little green tent"
+   },
+   "6": {
+    "cast": [
+     "child"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child peeks out from inside the snug fern den, smiling"
+   },
+   "7": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the grown-up and the child squeeze inside the den with a flask and a tin of biscuits; the pet sniffs the biscuits"
+   },
+   "8": {
+    "cast": [
+     "child"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "A robin on a branch near the den entrance; the child points at it from inside"
+   },
+   "9": {
+    "cast": [
+     "child"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "The robin pecks at a biscuit crumb on the ground just outside the den; the child holds very still"
+   },
+   "10": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child, the grown-up and the pet walk away along the path, looking back at the fern den; the robin sits on top of it"
+   }
+  }
+ },
+ "s4-vet": {
+  "title": "A trip to the vet",
+  "brand": "FLR",
+  "stage": 4,
+  "style": "a bright, friendly early-reader illustration: clean soft ink outlines, cheerful flat colours with gentle shading, simple uncluttered backgrounds, expressive happy faces and slightly simplified shapes, the same look on every page. Not 3D, not anime, not photographic, and not like any animated film or existing book series",
+  "roles": {
+   "child": {
+    "name": "the child",
+    "costume": "a sunny yellow T-shirt, blue jeans and red trainers",
+    "standin": "a cheerful five-year-old child with a round face, rosy cheeks and short curly brown hair"
+   },
+   "adult": {
+    "name": "the grown-up",
+    "costume": "a green jumper, dark trousers and comfortable brown shoes",
+    "standin": "a friendly, smiling grown-up in their thirties with short dark hair"
+   },
+   "pet": {
+    "name": "the pet",
+    "costume": "nothing at all, just their own fur or feathers and a plain red collar if they wear one",
+    "standin": "a small scruffy brown and white dog with floppy ears and a waggy tail"
+   }
+  },
+  "scenes": {
+   "1": {
+    "cast": [
+     "child",
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the pet lies on a cushion looking sorry for itself, holding up one paw; the child strokes the pet"
+   },
+   "2": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child gently lifts the pet into a pet carrier in the back of a car; the grown-up holds the car door"
+   },
+   "3": {
+    "cast": [
+     "child",
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "A vet's waiting room with a big dog, a cat in a carrier and a rabbit with long ears; the child sits with the pet"
+   },
+   "4": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "A friendly vet in green scrubs calls from a doorway; the child and the grown-up stand up with the pet"
+   },
+   "5": {
+    "cast": [
+     "child",
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "The vet gently holds the pet's paw on the examination table, looking at a tiny thorn; the child watches"
+   },
+   "6": {
+    "cast": [
+     "child",
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child hugs the pet's head while the vet pulls out the thorn with tweezers"
+   },
+   "7": {
+    "cast": [
+     "child",
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "The vet gives the pet a treat; the pet wags happily; the child beams"
+   },
+   "8": {
+    "cast": [
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the pet sits on the table proudly showing a little red bandage on one paw"
+   },
+   "9": {
+    "cast": [
+     "child",
+     "pet"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "At home, the pet rests in a cosy basket; the child sits beside it reading a book"
+   },
+   "10": {
+    "cast": [
+     "child",
+     "adult",
+     "pet"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "Morning in the garden; the pet leaps happily on the grass, bandage gone; the child and the grown-up cheer at the back door"
+   }
+  }
+ },
+ "s4-swim": {
+  "title": "In the swimming pool",
+  "brand": "FLR",
+  "stage": 4,
+  "style": "a bright, friendly early-reader illustration: clean soft ink outlines, cheerful flat colours with gentle shading, simple uncluttered backgrounds, expressive happy faces and slightly simplified shapes, the same look on every page. Not 3D, not anime, not photographic, and not like any animated film or existing book series",
+  "roles": {
+   "child": {
+    "name": "the child",
+    "costume": "a sunny yellow T-shirt, blue jeans and red trainers",
+    "standin": "a cheerful five-year-old child with a round face, rosy cheeks and short curly brown hair",
+    "outfit3": "a bright blue swimming costume with a little yellow star and orange armbands"
+   },
+   "adult": {
+    "name": "the grown-up",
+    "costume": "a green jumper, dark trousers and comfortable brown shoes",
+    "standin": "a friendly, smiling grown-up in their thirties with short dark hair"
+   }
+  },
+  "scenes": {
+   "1": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "Outside a leisure centre; the child carries a swim bag, the grown-up holds the door",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "2": {
+    "cast": [
+     "child"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "A bright indoor swimming pool with a curly slide and a little fountain; the child stares in delight",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "3": {
+    "cast": [
+     "child"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the child in orange armbands steps down the pool steps into shallow water",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "4": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the grown-up in the water holds the child's hands as the child kicks, splashing water everywhere",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "5": {
+    "cast": [
+     "child"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the child zooms off the end of the slide into the water with a splash",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "6": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child takes off one armband, looking determined; the grown-up stands ready a little way off",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "7": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "right",
+    "others": false,
+    "desc": "the child swims a few strokes towards the grown-up, chin up, kicking hard",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "8": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "the child reaches the grown-up's arms; both are cheering",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "9": {
+    "cast": [],
+    "text": "right",
+    "others": false,
+    "desc": "A smiling lifeguard on a tall chair gives a thumbs up",
+    "wear": {
+     "child": "outfit3"
+    }
+   },
+   "10": {
+    "cast": [
+     "child",
+     "adult"
+    ],
+    "text": "left",
+    "others": false,
+    "desc": "In the leisure centre café, the child with damp hair eats chips next to the grown-up, holding up a swimming certificate"
+   }
+  }
  }
 };
