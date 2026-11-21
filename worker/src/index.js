@@ -1,4 +1,4 @@
-import { STORIES, WHO, WHERE, characterPrompt, standinPrompt, villainPrompt, scenePrompt } from "./stories.js";
+import { STORIES, WHO, WHERE, characterPrompt, standinPrompt, villainPrompt, scenePrompt, setPrompt, posePrompt, PEOPLE_POSES, PET_POSES } from "./stories.js";
 import { PKG_RE, luluEnv, luluReady, printProducts, quote } from "./lulu.js";
 import { productFor, shippingFrom, enqueue, servePrintFile, runPrintQueue, testPdf } from "./printing.js";
 /* Family Board Books: photo storage and cartoon pipeline (Cloudflare Worker + R2, EU jurisdiction).
@@ -263,6 +263,26 @@ async function drawStory(env, images, text, aspect, size) {
   }
   throw lastErr;
 }
+// A set picture, readable by anyone (no family data in it). Cross-origin so pages can draw it on a canvas.
+async function serveSet(env, req, key, web) {
+  const h = { "Access-Control-Allow-Origin": "*", "Cache-Control": "public, max-age=3600" };
+  let obj = null;
+  if (web && env.IMAGES) {
+    obj = await env.BUCKET.get(key + ".web.webp");
+    if (!obj) {
+      const full = await env.BUCKET.get(key + ".png");
+      if (!full) return err(404, "Not found", h);
+      try {
+        const res = (await env.IMAGES.input(full.body).transform({ width: 1600, fit: "scale-down" }).output({ format: "image/webp", quality: 85 })).response();
+        await env.BUCKET.put(key + ".web.webp", await res.arrayBuffer(), { httpMetadata: { contentType: "image/webp" } });
+        obj = await env.BUCKET.get(key + ".web.webp");
+      } catch (e) { console.error("set web copy failed", key, e.message); }
+    }
+  }
+  if (!obj) obj = await env.BUCKET.get(key + ".png");
+  if (!obj) return err(404, "Not found", h);
+  return new Response(obj.body, { headers: Object.assign({ "Content-Type": obj.httpMetadata?.contentType || "image/png", "ETag": obj.httpEtag }, h) });
+}
 async function loadImage(env, key) {
   const o = await env.BUCKET.get(key);
   return o ? { bytes: await o.arrayBuffer(), type: o.httpMetadata?.contentType || "image/png" } : null;
@@ -447,6 +467,46 @@ async function handle(req, env) {
       else meta.deliveredAt = Date.now();
     });
     return json({ ok: true });
+  }
+
+  // Sets: our own reusable pictures for layered books (Learn to Read). Public to read, so any page can show them.
+  //   sets/<story>/s<n>                        a scene painted once with none of the family in it
+  //   sets/example/c-<role>                    our example family (stand-ins, never a real person)
+  //   sets/example/pose-<role>-<outfit>-<pose> a cut-out pose on flat green, keyed out by the site
+  // POST draws one; only our art drafts (ART_DRAFTS, with their secret token) may draw. ?w=web on GET gives a WebP copy.
+  let st = /^\/api\/sets\/([a-z0-9-]{2,24})\/(s\d{1,2}|c-[a-z]{2,12}|pose-[a-z]{2,12}-[a-z0-9]{2,12}-[a-z]{2,12})$/.exec(path);
+  if (st && m === "GET") return serveSet(env, req, "sets/" + st[1] + "/" + st[2], url.searchParams.get("w") === "web");
+  if (st && m === "POST") {
+    const body = await req.json().catch(() => ({}));
+    const art = String(body.draft || ""), artMeta = ID_RE.test(art) && (env.ART_DRAFTS || "").split(",").map(x => x.trim()).includes(art) ? await getMeta(env, art) : null;
+    if (!artMeta || typeof body.token !== "string" || !timingSafeEqual(await sha256(body.token), artMeta.tokenHash)) return E(403, "Not allowed");
+    const name = st[1], slot = st[2], size = /^[124]K$/.test(body.size || "") ? body.size : null;
+    let text, refs = [], aspect = "3:4";
+    if (slot[0] === "s") {
+      const story = STORIES[name];
+      if (!story || story.brand !== "FLR" || !story.scenes[slot.slice(1)]) return E(404, "Unknown scene.");
+      text = setPrompt(name, slot.slice(1)); aspect = "16:9";
+    } else {
+      const story = STORIES[body.story];  // any Learn to Read story: they share one style and one set of costumes
+      if (name !== "example" || !story || story.brand !== "FLR") return E(400, "Unknown example.");
+      if (slot.startsWith("c-")) {
+        if (!story.roles[slot.slice(2)]) return E(400, "Unknown role.");
+        text = standinPrompt(body.story, slot.slice(2));
+      } else {
+        const [, role, outfit, pose] = slot.split("-"), isPet = role === "pet";
+        if (!story.roles[role] || !(isPet ? PET_POSES : PEOPLE_POSES)[pose] || !(outfit === "costume" || story.roles[role][outfit])) return E(400, "Unknown pose.");
+        const ref = await loadImage(env, "sets/example/c-" + role + ".png");
+        if (!ref) return E(409, "Draw the character first.");
+        refs = [ref]; text = posePrompt(body.story, role, outfit, pose, isPet);
+      }
+    }
+    let out;
+    try { out = await drawStory(env, refs, text, aspect, size); }
+    catch (e) { console.error("set failed", name, slot, e.message); return E(502, "We couldn't draw this one. Please try again."); }
+    const key = "sets/" + name + "/" + slot;
+    await env.BUCKET.put(key + ".png", out.bytes, { httpMetadata: { contentType: out.type }, customMetadata: { engine: out.engine, size: out.size || "1K" } });
+    await env.BUCKET.delete(key + ".web.webp");
+    return J({ ok: true, key, engine: out.engine, size: out.size || "1K" });
   }
 
   // Create a draft.
@@ -672,11 +732,13 @@ async function handle(req, env) {
 async function cleanup(env) {
   const now = Date.now(), unpaidDays = num(env.UNPAID_DAYS, 14), keepAfterDelivery = 30, origBackstop = 60;
   let cursor, removed = 0;
+  const arts = (env.ART_DRAFTS || "").split(",").map(x => x.trim());
   do {
     const list = await env.BUCKET.list({ prefix: "meta/", cursor });
     for (const o of list.objects) {
       const meta = await (await env.BUCKET.get(o.key))?.json();
       if (!meta) continue;
+      if (arts.includes(meta.id)) continue;  // our own example-art drafts are kept
       if (!meta.paid && now - meta.created > unpaidDays * DAY) { await deleteDraft(env, meta.id); removed++; continue; }
       if (meta.paid && (meta.printedAt || now - meta.paidAt > origBackstop * DAY) && Object.values(meta.slots).some(s => s.orig)) {
         await deletePrefix(env, "orig/" + meta.id + "/");
