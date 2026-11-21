@@ -1,13 +1,15 @@
+import { READERS } from "./readers.js";  // Family Learn to Read stock stories (generated)
 /* Story books: fixed, hand-written stories. Customers choose who plays each role; the AI first draws
    each family member as a story character, then draws every scene from those characters.
    All prompts live here on the server, so the public API can only draw these scenes. */
 
-export const WHO = ["toddler", "baby", "girl", "boy", "child", "woman", "man", "older woman", "older man", "teenager"];
+export const ANIMALS = ["dog", "cat", "rabbit", "guinea pig", "pet"];
+export const WHO = ["toddler", "baby", "girl", "boy", "child", "woman", "man", "older woman", "older man", "teenager", "dog", "cat", "rabbit", "guinea pig", "pet"];
 export const WHERE = ["", "on the left", "on the right", "in the middle", "at the front", "at the back"];
 
 const WOLF = "the Wolf: a lanky, shaggy grey wolf with a pale cream chest and muzzle, big round yellow eyes, a black nose, tall pointed ears, a long snout with a far-too-wide grin full of small pointy teeth and a big bushy grey tail; he wears no clothes; comical and silly rather than scary";
 
-export const STORIES = {
+export const STORIES = Object.assign({
   redhood: {
     title: "Little Red Riding Hood",
     villain: WOLF, villainName: "the Wolf", villainPose: "standing on his hind legs",
@@ -156,13 +158,20 @@ export const STORIES = {
       12: { cast: ["hero", "mum", "helper", "grandma"], wolf: true, others: true, text: "left", desc: "a joyful birthday party in the castle hall with a big pink cake: the young royal hands a party invitation to a smiling Fairy Grumblethorn, while the Queen, the King and the good fairy celebrate and happy guests dance in the background" }
     }
   }
-};
+}, READERS);
 
 // Every character (from a photo, a stand-in or the villain) is drawn the same way, so they all match on the page.
 const POSE = "standing in a relaxed three-quarter view on a plain white background, the whole body in frame, filling most of the height of the picture";
 
 export function characterPrompt(story, role, who, where) {
   const s = STORIES[story], r = s.roles[role];
+  if (ANIMALS.includes(who)) {  // a family pet (Learn to Read books): no clothes, the pet's own look
+    return "IMAGE 1 is a photo of the customer's pet. Draw ONLY the " + who + (where ? " " + where : "") + " from it as a full-body storybook animal character called " + r.name +
+      ", in a relaxed three-quarter view on a plain white background, the whole body in frame, filling most of the picture. " +
+      "LIKENESS IS THE MOST IMPORTANT THING: the family must recognise their own pet instantly. Copy from the photo, as closely as the style allows: the kind of animal and breed, " +
+      "its size and build, the exact fur or feather colours and markings, the ear shape, eye colour, muzzle or face shape, tail and any collar. Keep it a real animal on its usual legs, not dressed and not standing like a person. " +
+      "Style: " + s.style + ". Draw only this one animal. No text or letters.";
+  }
   const person = (who || "person") + (where ? " " + where : "");
   return "IMAGE 1 is a photo of the customer's family. Draw ONLY the " + person + " from it as a full-body storybook character called " + r.name + ", " + POSE + ". " +
     "LIKENESS IS THE MOST IMPORTANT THING: their own family must recognise them instantly, as in a portrait painted by a skilled illustrator, not a generic storybook face. " +
