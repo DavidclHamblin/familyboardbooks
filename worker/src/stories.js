@@ -211,3 +211,49 @@ export function scenePrompt(story, n, villainRef) {
     "LAYOUT: the words of the story will be printed over the " + sc.text + " third of the picture, so keep that third completely free of characters, faces and important objects: only calm background there (sky, wall, floor or grass). Place every character in the other two thirds. " +
     "Style: " + s.style + ". No text, letters or speech bubbles.";
 }
+
+// ---------- Layered pictures (Learn to Read) ----------
+// Each scene is painted ONCE with nobody in it (a "set", kept and reused for every family), and each family member
+// is drawn once in a few cut-out poses on flat green. The site keys out the green and places the poses on the set,
+// so a family costs the same however many books they order.
+export const PEOPLE_POSES = {
+  stand: "standing facing us in a relaxed three-quarter view, smiling, arms relaxed",
+  walk: "walking towards the right, mid-stride, happy",
+  wave: "waving one hand high, big smile",
+  point: "pointing excitedly towards the right with one arm, looking that way",
+  cheer: "jumping for joy with both arms up in the air",
+  hold: "holding both hands out in front at waist height, as if carrying or giving something small, looking down at their hands",
+  crouch: "crouching down low on their heels, looking down at something on the ground in front of them",
+  sit: "sitting on the ground with legs crossed, side-on to us, facing right"
+};
+export const PET_POSES = {
+  stand: "standing on all fours, side-on facing right, looking happy",
+  sit: "sitting up, facing us, looking happy",
+  run: "running towards the right, all paws off the ground, ears flying",
+  lie: "lying down curled up, resting, facing right"
+};
+export const KEY_GREEN = "one flat, even, pure bright green (#00FF00) filling the whole background, with no ground, no shadow, no gradient and no other objects";
+
+// The empty set for scene n: the place and its things, with none of the family in it.
+export function setPrompt(story, n) {
+  const s = STORIES[story], sc = s.scenes[n];
+  const zone = sc.text === "left" ? "right" : "left";
+  return "Illustrate the BACKGROUND ONLY for one wide double-page spread of a children's picture book. The scene: " + sc.desc + ". " +
+    "The family (" + sc.cast.map(r => s.roles[r].name).join(", ") + ") will be added later as separate cut-out pictures, so leave every one of them OUT: no family members anywhere, not even partly, and no hands, shadows or footprints of them. " +
+    "Do draw the place and everything the scene needs around them: the objects they use or look at, the weather, the light and the mood. " +
+    (sc.others ? "Other people or animals the scene mentions (not the family) may appear, small and in the background. " : "No people and no animals at all, unless an animal is part of the scene itself and is not the family's pet. ") +
+    "LAYOUT: the words of the story will be printed over the " + sc.text + " third of the picture, so keep that third calm and plain (sky, wall, floor or grass). " +
+    "In the " + zone + " two thirds, keep the bottom 45% open: a clear, fairly flat stretch of floor, grass, sand or ground in the foreground, with nothing standing on it, where the characters will stand. " +
+    "Eye level is a small child's, looking straight on. Style: " + s.style + ". No text, letters or speech bubbles.";
+}
+
+// A cut-out pose: IMAGE 1 is the character's drawing (c-<role>); outfit is a role key (costume or outfitN).
+export function posePrompt(story, role, outfit, pose, isPet) {
+  const s = STORIES[story], r = s.roles[role], how = (isPet ? PET_POSES : PEOPLE_POSES)[pose];
+  const wear = outfit && outfit !== "costume" && r[outfit] ? r[outfit] : null;
+  return "IMAGE 1 is the character reference for " + r.name + ". Draw the SAME character again, full body, " + how + ". " +
+    "Copy them exactly: the same face, hair, skin tone, age, body shape" + (isPet ? ", fur colours and markings" : "") + (wear ? "" : " and exactly the same clothes") + ". " +
+    (wear ? "This time they are wearing " + wear + " instead of their usual clothes. " : "") +
+    "Background: " + KEY_GREEN + ". Do not use any green on the character" + (isPet ? "" : " or their clothes") + ". The whole body is in frame with a clear gap of green all round it; nothing touches the edges. " +
+    "Style: " + s.style + ". Draw only this one character. No text or letters.";
+}
