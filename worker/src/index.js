@@ -489,6 +489,38 @@ async function handle(req, env) {
 
   if (rest === "" && m === "DELETE") { await deleteDraft(env, id); return J({ ok: true, deleted: true }); }
 
+  // Copy drawn characters from another of the family's books: POST /copy { from, fromToken }.
+  // Learn to Read packs are several books with one cast; every reader shares one style and outfit,
+  // so the characters are drawn once and copied into the other books. Only c-<role> slots this book's
+  // story uses are copied, both books must be Learn to Read books, and the caller must hold both tokens.
+  if (rest === "/copy" && m === "POST") {
+    const body = await req.json().catch(() => ({}));
+    const from = String(body.from || "");
+    if (!ID_RE.test(from) || from === id) return E(400, "Unknown book.");
+    const src = await getMeta(env, from);
+    if (!src || typeof body.fromToken !== "string" || !timingSafeEqual(await sha256(body.fromToken), src.tokenHash)) return E(403, "Not allowed");
+    const story = STORIES[meta.book.replace(/^flr-/, "")], srcStory = STORIES[(src.book || "").replace(/^flr-/, "")];
+    if (!/^flr-/.test(meta.book) || !/^flr-/.test(src.book || "") || !story || !srcStory || story.brand !== "FLR" || srcStory.brand !== "FLR")
+      return E(400, "Characters can only be copied between Learn to Read books.");
+    const copied = [];
+    for (const role of Object.keys(story.roles)) {
+      const slot = "c-" + role, s = src.slots[slot];
+      if (!s || !s.toon) continue;
+      const obj = await env.BUCKET.get("toon/" + from + "/" + slot + ".png");
+      if (!obj) continue;
+      await env.BUCKET.put("toon/" + id + "/" + slot + ".png", await obj.arrayBuffer(), { httpMetadata: { contentType: obj.httpMetadata?.contentType || "image/png" } });
+      await env.BUCKET.delete("toon/" + id + "/" + slot + ".web.webp");
+      copied.push({ slot, style: s.style, engine: s.engine });
+    }
+    const fresh = await updateMeta(env, id, m => {
+      for (const c of copied) {
+        const s = m.slots[c.slot] || (m.slots[c.slot] = { gens: 0 });
+        s.toon = true; s.style = c.style; s.engine = c.engine; s.copiedFrom = from; delete s.pending; delete s.size;
+      }
+    });
+    return J({ ok: true, copied: copied.map(c => c.slot), ...publicStatus(fresh) });
+  }
+
   const sm = /^\/(photos|cartoons)\/([a-z0-9-]+)$/.exec(rest);
   if (!sm || !SLOT_RE.test(sm[2])) return E(404, "Not found");
   const kind = sm[1], slot = sm[2];

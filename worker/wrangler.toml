@@ -40,7 +40,7 @@ STYLE_ENGINES = '{"splash":"gemini","painted":"openai","watercolour":"gemini","c
 GEMINI_MODEL = "gemini-3.1-flash-image"
 OPENAI_MODEL = "gpt-image-2"
 OPENAI_QUALITY = "medium"
-ALLOWED_ORIGINS = "https://www.familyboardbooks.com,https://familyboardbooks.com,https://www.familystorybooks.co.uk,https://familystorybooks.co.uk"  # Family Storybooks uses the story characters (c-{role})
+ALLOWED_ORIGINS = "https://www.familyboardbooks.com,https://familyboardbooks.com,https://www.familystorybooks.co.uk,https://familystorybooks.co.uk,https://www.familylearntoread.com,https://familylearntoread.com"  # Family Storybooks uses the story characters (c-{role})
 FREE_SLOTS = "6"           # free cartoons before paying (two pages)
 FREE_GENS = "10"           # free tries in total, so a few redos
 UNPAID_DAYS = "14"         # unpaid previews are deleted after this many days
@@ -56,7 +56,7 @@ LULU_ENV = "live"
 # pkg = Lulu pod_package_id (trim, colour, quality, binding, paper, finish); pages = interior pages;
 # bookPrefix = drafts whose book starts with this are printed by Lulu; printUrl = the brand's print page ({story}).
 # A new brand (e.g. learn-to-read books, FLR) adds its own rows here.
-PRINT_PRODUCTS = '{"storybook":{"brand":"FST","name":"Family Storybooks hardcover, 8.5 in square","pkg":"0850X0850FCPRECW080CW444GXX","pages":28,"bookPrefix":"fst-","printUrl":"https://www.familystorybooks.co.uk/print.html?story={story}"}}'
+PRINT_PRODUCTS = '{"storybook":{"brand":"FST","name":"Family Storybooks hardcover, 8.5 in square","pkg":"0850X0850FCPRECW080CW444GXX","pages":28,"bookPrefix":"fst-","printUrl":"https://www.familystorybooks.co.uk/print.html?story={story}"},"reader":{"brand":"FLR","name":"Family Learn to Read paperback, 8.5 in square","pkg":"0850X0850FCSTDPB060UW444GXX","pages":32,"bookPrefix":"flr-","printUrl":"https://www.familylearntoread.com/print.html?story={story}"}}'
 
 # Secrets (set with `npx wrangler secret put NAME`, never written in this file):
 #   GEMINI_API_KEY, OPENAI_API_KEY, SHOPIFY_WEBHOOK_SECRET, ADMIN_TOKEN, TURNSTILE_SECRET (optional),
