@@ -28,13 +28,18 @@ export const READERS = {
   "scenes": {
    "1": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "right",
     "others": false,
     "desc": "the child pulls on a red raincoat by the front door while dark clouds gather outside the window; the grown-up and the pet watch",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -47,6 +52,10 @@ export const READERS = {
     "text": "left",
     "others": false,
     "desc": "the grown-up puts on a huge floppy rain hat; the pet stands in the open doorway already dripping",
+    "poses": {
+     "adult": "hold",
+     "pet": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -58,19 +67,27 @@ export const READERS = {
     "text": "right",
     "others": false,
     "desc": "A cosy house seen from outside, big raindrops bouncing off the roof, the child looking up from the window",
+    "poses": {
+     "child": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
    },
    "4": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "left",
     "others": false,
     "desc": "the child and the grown-up step out into the rain, faces up, laughing, the pet running ahead",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "run"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -82,6 +99,9 @@ export const READERS = {
     "text": "right",
     "others": false,
     "desc": "the child hops in a big muddy patch, mud splattered up red wellington boots",
+    "poses": {
+     "child": "cheer"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -93,6 +113,9 @@ export const READERS = {
     "text": "left",
     "others": false,
     "desc": "the pet rolls on its back in the mud, completely brown, looking delighted",
+    "poses": {
+     "pet": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -104,6 +127,9 @@ export const READERS = {
     "text": "right",
     "others": false,
     "desc": "A cheerful duck waddles past in the rain; the child points at it",
+    "poses": {
+     "child": "point"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -115,6 +141,9 @@ export const READERS = {
     "text": "left",
     "others": false,
     "desc": "The duck flaps in a puddle beside the child, who copies it with arms out like wings",
+    "poses": {
+     "child": "cheer"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -129,10 +158,19 @@ export const READERS = {
     }
    },
    "10": {
-    "cast": [],
+    "cast": [
+     "adult",
+     "child",
+     "pet"
+    ],
     "text": "left",
     "others": false,
-    "desc": "Back indoors, all three are covered in mud; a bubbly bath waits through the bathroom door"
+    "desc": "Back indoors, all three are covered in mud; a bubbly bath waits through the bathroom door",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "stand"
+    }
    }
   }
  },
@@ -161,12 +199,16 @@ export const READERS = {
   "scenes": {
    "1": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "right",
     "others": false,
-    "desc": "the child and the grown-up walk through a sunny park towards a small pond with reeds"
+    "desc": "the child and the grown-up walk through a sunny park towards a small pond with reeds",
+    "poses": {
+     "adult": "walk",
+     "child": "walk"
+    }
    },
    "2": {
     "cast": [
@@ -174,7 +216,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the pet trots behind them with its tail high"
+    "desc": "the pet trots behind them with its tail high",
+    "poses": {
+     "pet": "run"
+    }
    },
    "3": {
     "cast": [
@@ -182,7 +227,10 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child holds up a little fishing net and an empty glass jar, grinning"
+    "desc": "the child holds up a little fishing net and an empty glass jar, grinning",
+    "poses": {
+     "child": "hold"
+    }
    },
    "4": {
     "cast": [],
@@ -202,7 +250,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the child kneels at the edge and dips the net into the water, concentrating hard"
+    "desc": "the child kneels at the edge and dips the net into the water, concentrating hard",
+    "poses": {
+     "child": "crouch"
+    }
    },
    "7": {
     "cast": [],
@@ -216,7 +267,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the pet leans right over the edge, nose almost touching the water, staring at the big fish"
+    "desc": "the pet leans right over the edge, nose almost touching the water, staring at the big fish",
+    "poses": {
+     "pet": "stand"
+    }
    },
    "9": {
     "cast": [
@@ -224,17 +278,25 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the pet tumbles into the shallow pond with a big splash; the fish swims off"
+    "desc": "the pet tumbles into the shallow pond with a big splash; the fish swims off",
+    "poses": {
+     "pet": "run"
+    }
    },
    "10": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "left",
     "others": false,
-    "desc": "the grown-up lifts a soggy the pet out of the water while the child laughs"
+    "desc": "the grown-up lifts a soggy the pet out of the water while the child laughs",
+    "poses": {
+     "adult": "hold",
+     "child": "stand",
+     "pet": "stand"
+    }
    }
   }
  },
@@ -269,6 +331,9 @@ export const READERS = {
     "text": "right",
     "others": false,
     "desc": "the child in bed at night, eyes open, moonlight through the curtains",
+    "poses": {
+     "child": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -280,18 +345,25 @@ export const READERS = {
     "text": "left",
     "others": false,
     "desc": "the child climbs out of bed in pyjamas and tiptoes to the window",
+    "poses": {
+     "child": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
    },
    "3": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "right",
     "others": false,
     "desc": "the grown-up holds a torch; the child and the grown-up step quietly into the dark garden",
+    "poses": {
+     "adult": "hold",
+     "child": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -312,6 +384,9 @@ export const READERS = {
     "text": "right",
     "others": false,
     "desc": "the child looks up into the branches of the big oak, the torch beam pointing up",
+    "poses": {
+     "child": "point"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -323,6 +398,9 @@ export const READERS = {
     "text": "left",
     "others": false,
     "desc": "A round fluffy owl with big eyes sits on a branch, looking down kindly at the child",
+    "poses": {
+     "child": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -335,19 +413,28 @@ export const READERS = {
     "text": "right",
     "others": false,
     "desc": "the pet looks up at the owl, mouth open; the child holds a finger to lips",
+    "poses": {
+     "child": "hold",
+     "pet": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
    },
    "8": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "left",
     "others": false,
     "desc": "The owl stays calmly on its branch; the child, the grown-up and the pet gaze up at it",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -368,6 +455,9 @@ export const READERS = {
     "text": "left",
     "others": false,
     "desc": "the child snuggled back in bed, smiling sleepily; the owl is a small shape on the moon outside",
+    "poses": {
+     "child": "sit"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -399,13 +489,18 @@ export const READERS = {
   "scenes": {
    "1": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "right",
     "others": false,
-    "desc": "the child, the grown-up and the pet arrive at a farm gate with a red barn behind"
+    "desc": "the child, the grown-up and the pet arrive at a farm gate with a red barn behind",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "stand"
+    }
    },
    "2": {
     "cast": [],
@@ -419,7 +514,10 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "A pink pig wallows in mud; the pet stares at it from the fence"
+    "desc": "A pink pig wallows in mud; the pet stares at it from the fence",
+    "poses": {
+     "pet": "stand"
+    }
    },
    "4": {
     "cast": [
@@ -427,7 +525,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the pet dashes towards the pig, which trots away snorting"
+    "desc": "the pet dashes towards the pig, which trots away snorting",
+    "poses": {
+     "pet": "run"
+    }
    },
    "5": {
     "cast": [],
@@ -441,7 +542,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the child crouches and scatters corn; the chicks peck around the child's feet"
+    "desc": "the child crouches and scatters corn; the chicks peck around the child's feet",
+    "poses": {
+     "child": "crouch"
+    }
    },
    "7": {
     "cast": [
@@ -449,32 +553,53 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "A cheeky goat has its head in the child's bag of corn"
+    "desc": "A cheeky goat has its head in the child's bag of corn",
+    "poses": {
+     "child": "stand"
+    }
    },
    "8": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": true,
-    "desc": "A smiling farmer leads a big gentle horse; the grown-up lifts the child up"
+    "desc": "A smiling farmer leads a big gentle horse; the grown-up lifts the child up",
+    "poses": {
+     "adult": "hold",
+     "child": "stand"
+    }
    },
    "9": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "right",
     "others": false,
-    "desc": "the child sits proudly on the horse, waving; the grown-up and the pet look up"
+    "desc": "the child sits proudly on the horse, waving; the grown-up and the pet look up",
+    "poses": {
+     "adult": "stand",
+     "child": "wave",
+     "pet": "stand"
+    }
    },
    "10": {
-    "cast": [],
+    "cast": [
+     "adult",
+     "child",
+     "pet"
+    ],
     "text": "left",
     "others": false,
-    "desc": "Sunset over the farm; the animals settle down as the family waves goodbye"
+    "desc": "Sunset over the farm; the animals settle down as the family waves goodbye",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "stand"
+    }
    }
   }
  },
@@ -508,7 +633,11 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child with a small spade and a red bucket, the pet beside, in a garden vegetable patch"
+    "desc": "the child with a small spade and a red bucket, the pet beside, in a garden vegetable patch",
+    "poses": {
+     "child": "stand",
+     "pet": "stand"
+    }
    },
    "2": {
     "cast": [
@@ -516,7 +645,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the child digs hard, soil flying, feet covered in earth"
+    "desc": "the child digs hard, soil flying, feet covered in earth",
+    "poses": {
+     "child": "crouch"
+    }
    },
    "3": {
     "cast": [
@@ -524,7 +656,10 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the pet digs a deep hole with soil spraying out behind"
+    "desc": "the pet digs a deep hole with soil spraying out behind",
+    "poses": {
+     "pet": "sit"
+    }
    },
    "4": {
     "cast": [
@@ -532,7 +667,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the child holds up a muddy old coin, eyes wide"
+    "desc": "the child holds up a muddy old coin, eyes wide",
+    "poses": {
+     "child": "hold"
+    }
    },
    "5": {
     "cast": [
@@ -540,7 +678,10 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child uncovers a piece of an old patterned clay pot"
+    "desc": "the child uncovers a piece of an old patterned clay pot",
+    "poses": {
+     "child": "stand"
+    }
    },
    "6": {
     "cast": [
@@ -548,7 +689,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the pet proudly pulls an old rusty garden fork out of the ground"
+    "desc": "the pet proudly pulls an old rusty garden fork out of the ground",
+    "poses": {
+     "pet": "stand"
+    }
    },
    "7": {
     "cast": [
@@ -556,7 +700,10 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the grown-up examines the coin with a magnifying glass at the garden table, the pot piece beside it"
+    "desc": "the grown-up examines the coin with a magnifying glass at the garden table, the pot piece beside it",
+    "poses": {
+     "adult": "stand"
+    }
    },
    "8": {
     "cast": [
@@ -564,7 +711,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "Close-up of the coin showing a king's head; the grown-up looks amazed"
+    "desc": "Close-up of the coin showing a king's head; the grown-up looks amazed",
+    "poses": {
+     "adult": "stand"
+    }
    },
    "9": {
     "cast": [
@@ -572,7 +722,10 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child carefully places the coin in a little wooden box lined with cloth"
+    "desc": "the child carefully places the coin in a little wooden box lined with cloth",
+    "poses": {
+     "child": "stand"
+    }
    },
    "10": {
     "cast": [
@@ -581,7 +734,11 @@ export const READERS = {
     ],
     "text": "left",
     "others": true,
-    "desc": "In a small town museum, the coin and pot sit in a glass case; the child and the pet look proud"
+    "desc": "In a small town museum, the coin and pot sit in a glass case; the child and the pet look proud",
+    "poses": {
+     "child": "stand",
+     "pet": "stand"
+    }
    }
   }
  },
@@ -615,7 +772,11 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child and the pet sit in a big cardboard box painted like a rocket, in the garden"
+    "desc": "the child and the pet sit in a big cardboard box painted like a rocket, in the garden",
+    "poses": {
+     "child": "sit",
+     "pet": "sit"
+    }
    },
    "2": {
     "cast": [],
@@ -642,7 +803,11 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child and the pet bounce high in low gravity, laughing"
+    "desc": "the child and the pet bounce high in low gravity, laughing",
+    "poses": {
+     "child": "stand",
+     "pet": "stand"
+    }
    },
    "6": {
     "cast": [
@@ -650,7 +815,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the pet digs in a moon crater, dust flying"
+    "desc": "the pet digs in a moon crater, dust flying",
+    "poses": {
+     "pet": "sit"
+    }
    },
    "7": {
     "cast": [],
@@ -671,7 +839,11 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "A faint voice from Earth; the child and the pet hurry back to the rocket"
+    "desc": "A faint voice from Earth; the child and the pet hurry back to the rocket",
+    "poses": {
+     "child": "stand",
+     "pet": "stand"
+    }
    },
    "10": {
     "cast": [
@@ -679,7 +851,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "Back in the garden in the cardboard box; the grown-up holds out a plate of food, smiling"
+    "desc": "Back in the garden in the cardboard box; the grown-up holds out a plate of food, smiling",
+    "poses": {
+     "adult": "hold"
+    }
    }
   }
  },
@@ -708,13 +883,18 @@ export const READERS = {
   "scenes": {
    "1": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "right",
     "others": false,
-    "desc": "A small car winds up a green hill; the child, the grown-up and the pet inside"
+    "desc": "A small car winds up a green hill; the child, the grown-up and the pet inside",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "stand"
+    }
    },
    "2": {
     "cast": [],
@@ -734,7 +914,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the grown-up beeps the horn; the sheep just stare at the car"
+    "desc": "the grown-up beeps the horn; the sheep just stare at the car",
+    "poses": {
+     "adult": "stand"
+    }
    },
    "5": {
     "cast": [
@@ -742,7 +925,10 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the pet hops out of the car window, ears up"
+    "desc": "the pet hops out of the car window, ears up",
+    "poses": {
+     "pet": "run"
+    }
    },
    "6": {
     "cast": [
@@ -750,7 +936,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the pet runs round the sheep, herding them towards the hill"
+    "desc": "the pet runs round the sheep, herding them towards the hill",
+    "poses": {
+     "pet": "run"
+    }
    },
    "7": {
     "cast": [
@@ -758,7 +947,10 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "The sheep scamper up the hill; the child cheers from the car"
+    "desc": "The sheep scamper up the hill; the child cheers from the car",
+    "poses": {
+     "child": "cheer"
+    }
    },
    "8": {
     "cast": [],
@@ -773,10 +965,19 @@ export const READERS = {
     "desc": "A farmer in a flat cap appears on the hill and waves a crook"
    },
    "10": {
-    "cast": [],
+    "cast": [
+     "adult",
+     "child",
+     "pet"
+    ],
     "text": "left",
     "others": true,
-    "desc": "The last six sheep follow the farmer; the car drives on, everyone waving"
+    "desc": "The last six sheep follow the farmer; the car drives on, everyone waving",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "stand"
+    }
    }
   }
  },
@@ -805,13 +1006,18 @@ export const READERS = {
   "scenes": {
    "1": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "right",
     "others": false,
-    "desc": "A bright seaside chip shop; the child, the grown-up and the pet walk in"
+    "desc": "A bright seaside chip shop; the child, the grown-up and the pet walk in",
+    "poses": {
+     "adult": "walk",
+     "child": "walk",
+     "pet": "run"
+    }
    },
    "2": {
     "cast": [],
@@ -821,12 +1027,16 @@ export const READERS = {
    },
    "3": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "right",
     "others": false,
-    "desc": "the child holds a paper parcel of fish and chips; the grown-up holds a hot dog"
+    "desc": "the child holds a paper parcel of fish and chips; the grown-up holds a hot dog",
+    "poses": {
+     "adult": "hold",
+     "child": "hold"
+    }
    },
    "4": {
     "cast": [
@@ -835,7 +1045,11 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the child sits on a low sea wall by the beach, chips open on lap, the pet beside"
+    "desc": "the child sits on a low sea wall by the beach, chips open on lap, the pet beside",
+    "poses": {
+     "child": "sit",
+     "pet": "stand"
+    }
    },
    "5": {
     "cast": [],
@@ -849,7 +1063,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "The gull hops closer; the child shoos it with a hand"
+    "desc": "The gull hops closer; the child shoos it with a hand",
+    "poses": {
+     "child": "hold"
+    }
    },
    "7": {
     "cast": [],
@@ -869,7 +1086,10 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the pet barks bravely; the gulls fly off in a flurry of feathers"
+    "desc": "the pet barks bravely; the gulls fly off in a flurry of feathers",
+    "poses": {
+     "pet": "stand"
+    }
    },
    "10": {
     "cast": [
@@ -878,7 +1098,11 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the child and the pet share the chips in peace, sea and sunset behind"
+    "desc": "the child and the pet share the chips in peace, sea and sunset behind",
+    "poses": {
+     "child": "stand",
+     "pet": "stand"
+    }
    }
   }
  },
@@ -902,12 +1126,16 @@ export const READERS = {
   "scenes": {
    "1": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "right",
     "others": true,
-    "desc": "the child and the grown-up arrive at a funfair at dusk, lights twinkling"
+    "desc": "the child and the grown-up arrive at a funfair at dusk, lights twinkling",
+    "poses": {
+     "adult": "stand",
+     "child": "stand"
+    }
    },
    "2": {
     "cast": [],
@@ -921,7 +1149,10 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child rides a red horse on a merry-go-round, grinning"
+    "desc": "the child rides a red horse on a merry-go-round, grinning",
+    "poses": {
+     "child": "walk"
+    }
    },
    "4": {
     "cast": [
@@ -929,7 +1160,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": true,
-    "desc": "At a hook-a-duck stall, the child lifts a yellow duck on a hook"
+    "desc": "At a hook-a-duck stall, the child lifts a yellow duck on a hook",
+    "poses": {
+     "child": "hold"
+    }
    },
    "5": {
     "cast": [
@@ -937,16 +1171,23 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child hugs a big red teddy bear prize"
+    "desc": "the child hugs a big red teddy bear prize",
+    "poses": {
+     "child": "hold"
+    }
    },
    "6": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
-    "desc": "the child, the grown-up and the bear sit in a little roller-coaster car"
+    "desc": "the child, the grown-up and the bear sit in a little roller-coaster car",
+    "poses": {
+     "adult": "sit",
+     "child": "sit"
+    }
    },
    "7": {
     "cast": [],
@@ -956,21 +1197,29 @@ export const READERS = {
    },
    "8": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
-    "desc": "the grown-up and the child scream and laugh with arms in the air"
+    "desc": "the grown-up and the child scream and laugh with arms in the air",
+    "poses": {
+     "adult": "stand",
+     "child": "stand"
+    }
    },
    "9": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "right",
     "others": true,
-    "desc": "At a food stall, the grown-up with a hot dog and the child with a fizzy drink"
+    "desc": "At a food stall, the grown-up with a hot dog and the child with a fizzy drink",
+    "poses": {
+     "adult": "stand",
+     "child": "stand"
+    }
    },
    "10": {
     "cast": [
@@ -978,7 +1227,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": true,
-    "desc": "the child asleep in bed hugging the red bear, fair lights far away through the window"
+    "desc": "the child asleep in bed hugging the red bear, fair lights far away through the window",
+    "poses": {
+     "child": "hold"
+    }
    }
   }
  },
@@ -1008,22 +1260,31 @@ export const READERS = {
   "scenes": {
    "1": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "right",
     "others": false,
-    "desc": "A little red rowing boat at a lake jetty; the child, the grown-up and the pet climb in"
+    "desc": "A little red rowing boat at a lake jetty; the child, the grown-up and the pet climb in",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "stand"
+    }
    },
    "2": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
-    "desc": "the grown-up rows; the child leans over the side looking into the water"
+    "desc": "the grown-up rows; the child leans over the side looking into the water",
+    "poses": {
+     "adult": "stand",
+     "child": "crouch"
+    }
    },
    "3": {
     "cast": [],
@@ -1043,16 +1304,23 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "A silver fish leaps out of the water near the boat; the pet stares"
+    "desc": "A silver fish leaps out of the water near the boat; the pet stares",
+    "poses": {
+     "pet": "stand"
+    }
    },
    "6": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
     "desc": "Rain starts; the grown-up hands the child a yellow raincoat",
+    "poses": {
+     "adult": "hold",
+     "child": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -1064,15 +1332,27 @@ export const READERS = {
     "text": "right",
     "others": false,
     "desc": "the pet sits in the boat, soaking wet and looking grumpy",
+    "poses": {
+     "pet": "sit"
+    },
     "wear": {
      "child": "outfit3"
     }
    },
    "8": {
-    "cast": [],
+    "cast": [
+     "adult",
+     "child",
+     "pet"
+    ],
     "text": "left",
     "others": false,
     "desc": "The boat bumps a rock near the shore; everyone wobbles",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -1084,15 +1364,27 @@ export const READERS = {
     "text": "right",
     "others": false,
     "desc": "the child checks the side of the boat; no damage, everyone smiles",
+    "poses": {
+     "child": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
    },
    "10": {
-    "cast": [],
+    "cast": [
+     "adult",
+     "child",
+     "pet"
+    ],
     "text": "left",
     "others": false,
     "desc": "Back at the jetty, all three drip and laugh; the rain stops and the sun comes out",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -1124,22 +1416,31 @@ export const READERS = {
   "scenes": {
    "1": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "right",
     "others": false,
-    "desc": "the child and the grown-up pull a rolled-up green tent out of a garden shed on a sunny afternoon; the pet watches"
+    "desc": "the child and the grown-up pull a rolled-up green tent out of a garden shed on a sunny afternoon; the pet watches",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "stand"
+    }
    },
    "2": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
-    "desc": "the child hammers a tent peg with a little mallet while the grown-up holds up the tent poles; the tent is half up"
+    "desc": "the child hammers a tent peg with a little mallet while the grown-up holds up the tent poles; the tent is half up",
+    "poses": {
+     "adult": "hold",
+     "child": "stand"
+    }
    },
    "3": {
     "cast": [
@@ -1147,16 +1448,23 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "Inside the little tent: a sleeping bag, a torch and a big pillow; the pet has already curled up on the pillow"
+    "desc": "Inside the little tent: a sleeping bag, a torch and a big pillow; the pet has already curled up on the pillow",
+    "poses": {
+     "pet": "lie"
+    }
    },
    "4": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
-    "desc": "Dusk in the garden; the grown-up and the child sit in the open tent with a glowing lantern, mugs of hot milk and a plate of biscuits"
+    "desc": "Dusk in the garden; the grown-up and the child sit in the open tent with a glowing lantern, mugs of hot milk and a plate of biscuits",
+    "poses": {
+     "adult": "sit",
+     "child": "sit"
+    }
    },
    "5": {
     "cast": [
@@ -1164,16 +1472,23 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "Night; the child sits up in the sleeping bag, eyes wide, holding a torch, listening; shadows of plants on the tent wall"
+    "desc": "Night; the child sits up in the sleeping bag, eyes wide, holding a torch, listening; shadows of plants on the tent wall",
+    "poses": {
+     "child": "sit"
+    }
    },
    "6": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
-    "desc": "the child and the grown-up creep across the dark lawn, the torch beam lighting up wet grass"
+    "desc": "the child and the grown-up creep across the dark lawn, the torch beam lighting up wet grass",
+    "poses": {
+     "adult": "stand",
+     "child": "stand"
+    }
    },
    "7": {
     "cast": [
@@ -1181,7 +1496,10 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "The torch beam shows a small hedgehog nibbling in the grass; the child smiles in surprise"
+    "desc": "The torch beam shows a small hedgehog nibbling in the grass; the child smiles in surprise",
+    "poses": {
+     "child": "stand"
+    }
    },
    "8": {
     "cast": [
@@ -1189,7 +1507,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "Close-up: the hedgehog looks up at the child, nose twitching; the child kneels and keeps very still"
+    "desc": "Close-up: the hedgehog looks up at the child, nose twitching; the child kneels and keeps very still",
+    "poses": {
+     "child": "stand"
+    }
    },
    "9": {
     "cast": [
@@ -1198,7 +1519,11 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child gently holds the pet back; the hedgehog trundles off into a flower bed"
+    "desc": "the child gently holds the pet back; the hedgehog trundles off into a flower bed",
+    "poses": {
+     "child": "hold",
+     "pet": "stand"
+    }
    },
    "10": {
     "cast": [
@@ -1207,7 +1532,11 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "The tent glowing softly at night; inside, the child and the pet asleep together; the moon and stars above the garden"
+    "desc": "The tent glowing softly at night; inside, the child and the pet asleep together; the moon and stars above the garden",
+    "poses": {
+     "child": "stand",
+     "pet": "stand"
+    }
    }
   }
  },
@@ -1242,43 +1571,59 @@ export const READERS = {
     "text": "right",
     "others": false,
     "desc": "the child in pyjamas presses their nose to a frosty window; outside, the garden is deep in fresh snow",
+    "poses": {
+     "child": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
    },
    "2": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
     "desc": "the child now in a red woolly hat, scarf and coat; the grown-up carries a wooden sledge out of the shed",
+    "poses": {
+     "adult": "hold",
+     "child": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
    },
    "3": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "right",
     "others": false,
     "desc": "the child and the grown-up trudge up a snowy hill pulling the sledge; the pet bounds ahead in the snow",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
    },
    "4": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
     "desc": "the child whizzes down the snowy hill on the sledge, arms up and laughing; the grown-up waves from the top",
+    "poses": {
+     "adult": "wave",
+     "child": "cheer"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -1290,18 +1635,25 @@ export const READERS = {
     "text": "right",
     "others": false,
     "desc": "the pet leaps into a snowdrift and comes out covered in white snow from nose to tail",
+    "poses": {
+     "pet": "run"
+    },
     "wear": {
      "child": "outfit3"
     }
    },
    "6": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
     "desc": "the child and the grown-up roll two big snowballs; a snowman is taking shape",
+    "poses": {
+     "adult": "stand",
+     "child": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -1313,18 +1665,25 @@ export const READERS = {
     "text": "right",
     "others": false,
     "desc": "the child pushes a carrot nose into the snowman's face; it wears an old hat and two pebble eyes",
+    "poses": {
+     "child": "hold"
+    },
     "wear": {
      "child": "outfit3"
     }
    },
    "8": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
     "desc": "A snowball bursts on the grown-up's shoulder; the grown-up spins round, pretending to be cross; the child hides behind the snowman, giggling",
+    "poses": {
+     "adult": "stand",
+     "child": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -1336,19 +1695,27 @@ export const READERS = {
     "text": "right",
     "others": false,
     "desc": "A happy snowball fight in the park, snowballs flying; the pet chases them",
+    "poses": {
+     "pet": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
    },
    "10": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "left",
     "others": false,
-    "desc": "In a cosy kitchen, the child and the grown-up wrapped in blankets sip hot chocolate; wet mittens dry on the radiator; the pet snoozes"
+    "desc": "In a cosy kitchen, the child and the grown-up wrapped in blankets sip hot chocolate; wet mittens dry on the radiator; the pet snoozes",
+    "poses": {
+     "adult": "sit",
+     "child": "sit",
+     "pet": "lie"
+    }
    }
   }
  },
@@ -1377,13 +1744,18 @@ export const READERS = {
   "scenes": {
    "1": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "right",
     "others": false,
-    "desc": "A sunny sandy beach with gentle waves; the child, the grown-up and the pet arrive carrying a bucket, spade and towels"
+    "desc": "A sunny sandy beach with gentle waves; the child, the grown-up and the pet arrive carrying a bucket, spade and towels",
+    "poses": {
+     "adult": "hold",
+     "child": "hold",
+     "pet": "stand"
+    }
    },
    "2": {
     "cast": [
@@ -1391,7 +1763,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the child kneels and digs in the sand with a spade, a red bucket beside them"
+    "desc": "the child kneels and digs in the sand with a spade, a red bucket beside them",
+    "poses": {
+     "child": "crouch"
+    }
    },
    "3": {
     "cast": [
@@ -1399,16 +1774,23 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child lifts the bucket off a perfect sandcastle; two more stand next to it"
+    "desc": "the child lifts the bucket off a perfect sandcastle; two more stand next to it",
+    "poses": {
+     "child": "hold"
+    }
    },
    "4": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
-    "desc": "the child and the grown-up walk along the shoreline towards some rocks, looking down for shells"
+    "desc": "the child and the grown-up walk along the shoreline towards some rocks, looking down for shells",
+    "poses": {
+     "adult": "crouch",
+     "child": "crouch"
+    }
    },
    "5": {
     "cast": [
@@ -1416,7 +1798,10 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child holds out three shells in a cupped hand: a pink one, a long thin one and one with a hole"
+    "desc": "the child holds out three shells in a cupped hand: a pink one, a long thin one and one with a hole",
+    "poses": {
+     "child": "hold"
+    }
    },
    "6": {
     "cast": [
@@ -1424,7 +1809,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "Looking into a clear rock pool: a small red crab with raised claws, seaweed around it; the child points"
+    "desc": "Looking into a clear rock pool: a small red crab with raised claws, seaweed around it; the child points",
+    "poses": {
+     "child": "point"
+    }
    },
    "7": {
     "cast": [
@@ -1432,17 +1820,25 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "The crab pinches the pet's nose; the pet jumps back with a startled face"
+    "desc": "The crab pinches the pet's nose; the pet jumps back with a startled face",
+    "poses": {
+     "pet": "stand"
+    }
    },
    "8": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "left",
     "others": false,
-    "desc": "the pet splashes into the shallow waves; the child and the grown-up laugh on the sand"
+    "desc": "the pet splashes into the shallow waves; the child and the grown-up laugh on the sand",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "stand"
+    }
    },
    "9": {
     "cast": [
@@ -1450,17 +1846,25 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "The tide has washed over the place where the sandcastles were; only a flat bump and the red bucket remain; the child looks surprised"
+    "desc": "The tide has washed over the place where the sandcastles were; only a flat bump and the red bucket remain; the child looks surprised",
+    "poses": {
+     "child": "stand"
+    }
    },
    "10": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "left",
     "others": false,
-    "desc": "Evening at the beach; the child, the grown-up and the pet walk home, the child holding the shells, a pink sunset over the sea"
+    "desc": "Evening at the beach; the child, the grown-up and the pet walk home, the child holding the shells, a pink sunset over the sea",
+    "poses": {
+     "adult": "walk",
+     "child": "walk",
+     "pet": "run"
+    }
    }
   }
  },
@@ -1484,30 +1888,42 @@ export const READERS = {
   "scenes": {
    "1": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "right",
     "others": false,
-    "desc": "A bus stop on a town street; the child and the grown-up wait as a red double-decker bus comes round the corner"
+    "desc": "A bus stop on a town street; the child and the grown-up wait as a red double-decker bus comes round the corner",
+    "poses": {
+     "adult": "stand",
+     "child": "stand"
+    }
    },
    "2": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
-    "desc": "the grown-up shows tickets to a smiling bus driver; the child is already heading for the stairs"
+    "desc": "the grown-up shows tickets to a smiling bus driver; the child is already heading for the stairs",
+    "poses": {
+     "adult": "hold",
+     "child": "walk"
+    }
    },
    "3": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "right",
     "others": false,
-    "desc": "the child sits at the big front window on the top deck of the bus, hands out like steering a wheel; the grown-up beside them"
+    "desc": "the child sits at the big front window on the top deck of the bus, hands out like steering a wheel; the grown-up beside them",
+    "poses": {
+     "adult": "stand",
+     "child": "sit"
+    }
    },
    "4": {
     "cast": [],
@@ -1521,7 +1937,10 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "The bus climbs a steep hill; inside, the child leans forward as if to help it"
+    "desc": "The bus climbs a steep hill; inside, the child leans forward as if to help it",
+    "poses": {
+     "child": "hold"
+    }
    },
    "6": {
     "cast": [
@@ -1529,25 +1948,36 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "From the top deck: a wide view of a little town; the child points at a block of flats in the distance"
+    "desc": "From the top deck: a wide view of a little town; the child points at a block of flats in the distance",
+    "poses": {
+     "child": "point"
+    }
    },
    "7": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "right",
     "others": false,
-    "desc": "The bus at its last stop beside a large park with a pond and ducks; the child and the grown-up step off"
+    "desc": "The bus at its last stop beside a large park with a pond and ducks; the child and the grown-up step off",
+    "poses": {
+     "adult": "stand",
+     "child": "stand"
+    }
    },
    "8": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
-    "desc": "the child and the grown-up sit on a picnic blanket on the grass with sandwiches, crisps and drinks, ducks nearby"
+    "desc": "the child and the grown-up sit on a picnic blanket on the grass with sandwiches, crisps and drinks, ducks nearby",
+    "poses": {
+     "adult": "sit",
+     "child": "sit"
+    }
    },
    "9": {
     "cast": [
@@ -1555,16 +1985,23 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child runs up the stairs of the bus to grab the front seat on the top deck again"
+    "desc": "the child runs up the stairs of the bus to grab the front seat on the top deck again",
+    "poses": {
+     "child": "walk"
+    }
    },
    "10": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
-    "desc": "Late afternoon light on the top deck; the child asleep against the grown-up's arm; the grown-up smiles"
+    "desc": "Late afternoon light on the top deck; the child asleep against the grown-up's arm; the grown-up smiles",
+    "poses": {
+     "adult": "stand",
+     "child": "stand"
+    }
    }
   }
  },
@@ -1594,12 +2031,16 @@ export const READERS = {
   "scenes": {
    "1": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "right",
     "others": false,
-    "desc": "A kitchen counter with flour, butter, a jar of strawberry jam and a mixing bowl; the child and the grown-up tie on aprons"
+    "desc": "A kitchen counter with flour, butter, a jar of strawberry jam and a mixing bowl; the child and the grown-up tie on aprons",
+    "poses": {
+     "adult": "hold",
+     "child": "hold"
+    }
    },
    "2": {
     "cast": [
@@ -1609,18 +2050,26 @@ export const READERS = {
     "text": "left",
     "others": false,
     "desc": "the child rolls out pastry with a rolling pin, flour everywhere; the pet watches from the floor",
+    "poses": {
+     "child": "stand",
+     "pet": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
    },
    "3": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "right",
     "others": false,
     "desc": "the child spoons jam into pastry cases in a tart tin; the grown-up cuts circles with a cutter",
+    "poses": {
+     "adult": "hold",
+     "child": "hold"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -1632,6 +2081,9 @@ export const READERS = {
     "text": "left",
     "others": false,
     "desc": "the child peers through the oven door at the tarts baking; a warm glow from the oven",
+    "poses": {
+     "child": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -1647,12 +2099,16 @@ export const READERS = {
    },
    "6": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
     "desc": "the child points at the tarts one by one, counting; the grown-up dries a bowl",
+    "poses": {
+     "adult": "stand",
+     "child": "point"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -1664,19 +2120,27 @@ export const READERS = {
     "text": "right",
     "others": false,
     "desc": "the child looks shocked at the cooling rack: there is an empty gap where one tart was",
+    "poses": {
+     "child": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
    },
    "8": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "left",
     "others": false,
     "desc": "the child and the grown-up turn slowly to look at the pet, who sits very still, trying to look innocent",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "sit"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -1688,19 +2152,27 @@ export const READERS = {
     "text": "right",
     "others": false,
     "desc": "Close-up of the pet with a blob of red jam on the chin and a guilty look",
+    "poses": {
+     "pet": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
    },
    "10": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "left",
     "others": false,
-    "desc": "the child and the grown-up sit at the table eating jam tarts and laughing; the pet licks its lips under the table"
+    "desc": "the child and the grown-up sit at the table eating jam tarts and laughing; the pet licks its lips under the table",
+    "poses": {
+     "adult": "sit",
+     "child": "sit",
+     "pet": "stand"
+    }
    }
   }
  },
@@ -1729,13 +2201,18 @@ export const READERS = {
   "scenes": {
    "1": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "right",
     "others": false,
-    "desc": "A green park with a reedy pond; the pet runs ahead of the child and the grown-up along the path"
+    "desc": "A green park with a reedy pond; the pet runs ahead of the child and the grown-up along the path",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "run"
+    }
    },
    "2": {
     "cast": [
@@ -1743,7 +2220,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "A small green frog sits on a large lily pad in the pond; the child crouches on the bank, pointing"
+    "desc": "A small green frog sits on a large lily pad in the pond; the child crouches on the bank, pointing",
+    "poses": {
+     "child": "point"
+    }
    },
    "3": {
     "cast": [],
@@ -1763,7 +2243,10 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the pet jumps into the edge of the pond after the frog, sending up a big splash"
+    "desc": "the pet jumps into the edge of the pond after the frog, sending up a big splash",
+    "poses": {
+     "pet": "run"
+    }
    },
    "6": {
     "cast": [
@@ -1771,27 +2254,40 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "The frog hops onto a mossy log and slips into tall reeds; the pet stands in the shallow water, confused"
+    "desc": "The frog hops onto a mossy log and slips into tall reeds; the pet stands in the shallow water, confused",
+    "poses": {
+     "pet": "stand"
+    }
    },
    "7": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "right",
     "others": false,
-    "desc": "the grown-up lifts dripping the pet out onto the grass; the child laughs"
+    "desc": "the grown-up lifts dripping the pet out onto the grass; the child laughs",
+    "poses": {
+     "adult": "hold",
+     "child": "stand",
+     "pet": "stand"
+    }
    },
    "8": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "left",
     "others": false,
-    "desc": "the pet shakes off water in a spray of droplets; the child and the grown-up shield their faces"
+    "desc": "the pet shakes off water in a spray of droplets; the child and the grown-up shield their faces",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "stand"
+    }
    },
    "9": {
     "cast": [
@@ -1799,7 +2295,10 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child sits very still on the bank; the frog peeks out of the reeds and hops onto a stone near them"
+    "desc": "the child sits very still on the bank; the frog peeks out of the reeds and hops onto a stone near them",
+    "poses": {
+     "child": "sit"
+    }
    },
    "10": {
     "cast": [
@@ -1808,7 +2307,11 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "The frog sits on a stone near the child, both looking at each other; the pet lies drying in the sun"
+    "desc": "The frog sits on a stone near the child, both looking at each other; the pet lies drying in the sun",
+    "poses": {
+     "child": "stand",
+     "pet": "lie"
+    }
    }
   }
  },
@@ -1847,7 +2350,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "Rain lashes a bedroom window; the pet peeks out from under the bed"
+    "desc": "Rain lashes a bedroom window; the pet peeks out from under the bed",
+    "poses": {
+     "pet": "sit"
+    }
    },
    "3": {
     "cast": [
@@ -1855,7 +2361,10 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "A bright flash of lightning lights up the room; the child jumps in surprise"
+    "desc": "A bright flash of lightning lights up the room; the child jumps in surprise",
+    "poses": {
+     "child": "cheer"
+    }
    },
    "4": {
     "cast": [
@@ -1863,16 +2372,23 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "The room goes dark; only the child's wide eyes and a faint window light are seen"
+    "desc": "The room goes dark; only the child's wide eyes and a faint window light are seen",
+    "poses": {
+     "child": "stand"
+    }
    },
    "5": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "right",
     "others": false,
-    "desc": "the grown-up comes in with a torch, its beam lighting a friendly path across the room to the child"
+    "desc": "the grown-up comes in with a torch, its beam lighting a friendly path across the room to the child",
+    "poses": {
+     "adult": "stand",
+     "child": "stand"
+    }
    },
    "6": {
     "cast": [],
@@ -1882,23 +2398,33 @@ export const READERS = {
    },
    "7": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "right",
     "others": false,
-    "desc": "the child and the grown-up under a blanket den on the bed, lit by the torch; the pet crawls in to join them"
+    "desc": "the child and the grown-up under a blanket den on the bed, lit by the torch; the pet crawls in to join them",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "stand"
+    }
    },
    "8": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "left",
     "others": false,
-    "desc": "the grown-up holds the torch under their chin to tell a story; the child listens, hugging the pet"
+    "desc": "the grown-up holds the torch under their chin to tell a story; the child listens, hugging the pet",
+    "poses": {
+     "adult": "hold",
+     "child": "hold",
+     "pet": "stand"
+    }
    },
    "9": {
     "cast": [],
@@ -1908,13 +2434,18 @@ export const READERS = {
    },
    "10": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "left",
     "others": false,
-    "desc": "The bedroom light is on again; the child and the pet are asleep in the blanket den; the grown-up smiles and switches the light off"
+    "desc": "The bedroom light is on again; the child and the pet are asleep in the blanket den; the grown-up smiles and switches the light off",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "stand"
+    }
    }
   }
  },
@@ -1943,31 +2474,44 @@ export const READERS = {
   "scenes": {
    "1": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "right",
     "others": false,
-    "desc": "A sunny woodland path with tall trees and ferns; the child, the grown-up and the pet walking along"
+    "desc": "A sunny woodland path with tall trees and ferns; the child, the grown-up and the pet walking along",
+    "poses": {
+     "adult": "walk",
+     "child": "walk",
+     "pet": "run"
+    }
    },
    "2": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
-    "desc": "the child points at a big fallen tree with lots of sticks around it; the grown-up nods"
+    "desc": "the child points at a big fallen tree with lots of sticks around it; the grown-up nods",
+    "poses": {
+     "adult": "stand",
+     "child": "point"
+    }
    },
    "3": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "right",
     "others": false,
-    "desc": "the child and the grown-up lean long sticks against a fallen log to make a den frame"
+    "desc": "the child and the grown-up lean long sticks against a fallen log to make a den frame",
+    "poses": {
+     "adult": "hold",
+     "child": "hold"
+    }
    },
    "4": {
     "cast": [
@@ -1975,7 +2519,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the pet proudly carries a tiny twig in its mouth"
+    "desc": "the pet proudly carries a tiny twig in its mouth",
+    "poses": {
+     "pet": "stand"
+    }
    },
    "5": {
     "cast": [
@@ -1983,7 +2530,10 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child drapes big green ferns over the sticks; the den looks like a little green tent"
+    "desc": "the child drapes big green ferns over the sticks; the den looks like a little green tent",
+    "poses": {
+     "child": "stand"
+    }
    },
    "6": {
     "cast": [
@@ -1991,17 +2541,25 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the child peeks out from inside the snug fern den, smiling"
+    "desc": "the child peeks out from inside the snug fern den, smiling",
+    "poses": {
+     "child": "crouch"
+    }
    },
    "7": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "right",
     "others": false,
-    "desc": "the grown-up and the child squeeze inside the den with a flask and a tin of biscuits; the pet sniffs the biscuits"
+    "desc": "the grown-up and the child squeeze inside the den with a flask and a tin of biscuits; the pet sniffs the biscuits",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "stand"
+    }
    },
    "8": {
     "cast": [
@@ -2009,7 +2567,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "A robin on a branch near the den entrance; the child points at it from inside"
+    "desc": "A robin on a branch near the den entrance; the child points at it from inside",
+    "poses": {
+     "child": "point"
+    }
    },
    "9": {
     "cast": [
@@ -2017,17 +2578,25 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "The robin pecks at a biscuit crumb on the ground just outside the den; the child holds very still"
+    "desc": "The robin pecks at a biscuit crumb on the ground just outside the den; the child holds very still",
+    "poses": {
+     "child": "hold"
+    }
    },
    "10": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "left",
     "others": false,
-    "desc": "the child, the grown-up and the pet walk away along the path, looking back at the fern den; the robin sits on top of it"
+    "desc": "the child, the grown-up and the pet walk away along the path, looking back at the fern den; the robin sits on top of it",
+    "poses": {
+     "adult": "walk",
+     "child": "walk",
+     "pet": "run"
+    }
    }
   }
  },
@@ -2061,17 +2630,26 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the pet lies on a cushion looking sorry for itself, holding up one paw; the child strokes the pet"
+    "desc": "the pet lies on a cushion looking sorry for itself, holding up one paw; the child strokes the pet",
+    "poses": {
+     "child": "hold",
+     "pet": "lie"
+    }
    },
    "2": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "left",
     "others": false,
-    "desc": "the child gently lifts the pet into a pet carrier in the back of a car; the grown-up holds the car door"
+    "desc": "the child gently lifts the pet into a pet carrier in the back of a car; the grown-up holds the car door",
+    "poses": {
+     "adult": "hold",
+     "child": "hold",
+     "pet": "stand"
+    }
    },
    "3": {
     "cast": [
@@ -2080,17 +2658,26 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "A vet's waiting room with a big dog, a cat in a carrier and a rabbit with long ears; the child sits with the pet"
+    "desc": "A vet's waiting room with a big dog, a cat in a carrier and a rabbit with long ears; the child sits with the pet",
+    "poses": {
+     "child": "sit",
+     "pet": "stand"
+    }
    },
    "4": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "left",
     "others": false,
-    "desc": "A friendly vet in green scrubs calls from a doorway; the child and the grown-up stand up with the pet"
+    "desc": "A friendly vet in green scrubs calls from a doorway; the child and the grown-up stand up with the pet",
+    "poses": {
+     "adult": "stand",
+     "child": "stand",
+     "pet": "stand"
+    }
    },
    "5": {
     "cast": [
@@ -2099,7 +2686,11 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "The vet gently holds the pet's paw on the examination table, looking at a tiny thorn; the child watches"
+    "desc": "The vet gently holds the pet's paw on the examination table, looking at a tiny thorn; the child watches",
+    "poses": {
+     "child": "stand",
+     "pet": "stand"
+    }
    },
    "6": {
     "cast": [
@@ -2108,7 +2699,11 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the child hugs the pet's head while the vet pulls out the thorn with tweezers"
+    "desc": "the child hugs the pet's head while the vet pulls out the thorn with tweezers",
+    "poses": {
+     "child": "hold",
+     "pet": "run"
+    }
    },
    "7": {
     "cast": [
@@ -2117,7 +2712,11 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "The vet gives the pet a treat; the pet wags happily; the child beams"
+    "desc": "The vet gives the pet a treat; the pet wags happily; the child beams",
+    "poses": {
+     "child": "stand",
+     "pet": "stand"
+    }
    },
    "8": {
     "cast": [
@@ -2125,7 +2724,10 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the pet sits on the table proudly showing a little red bandage on one paw"
+    "desc": "the pet sits on the table proudly showing a little red bandage on one paw",
+    "poses": {
+     "pet": "sit"
+    }
    },
    "9": {
     "cast": [
@@ -2134,17 +2736,26 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "At home, the pet rests in a cosy basket; the child sits beside it reading a book"
+    "desc": "At home, the pet rests in a cosy basket; the child sits beside it reading a book",
+    "poses": {
+     "child": "sit",
+     "pet": "lie"
+    }
    },
    "10": {
     "cast": [
-     "child",
      "adult",
+     "child",
      "pet"
     ],
     "text": "left",
     "others": false,
-    "desc": "Morning in the garden; the pet leaps happily on the grass, bandage gone; the child and the grown-up cheer at the back door"
+    "desc": "Morning in the garden; the pet leaps happily on the grass, bandage gone; the child and the grown-up cheer at the back door",
+    "poses": {
+     "adult": "cheer",
+     "child": "cheer",
+     "pet": "run"
+    }
    }
   }
  },
@@ -2169,12 +2780,16 @@ export const READERS = {
   "scenes": {
    "1": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "right",
     "others": false,
     "desc": "Outside a leisure centre; the child carries a swim bag, the grown-up holds the door",
+    "poses": {
+     "adult": "hold",
+     "child": "cheer"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -2186,6 +2801,9 @@ export const READERS = {
     "text": "left",
     "others": false,
     "desc": "A bright indoor swimming pool with a curly slide and a little fountain; the child stares in delight",
+    "poses": {
+     "child": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -2197,18 +2815,25 @@ export const READERS = {
     "text": "right",
     "others": false,
     "desc": "the child in orange armbands steps down the pool steps into shallow water",
+    "poses": {
+     "child": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
    },
    "4": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
     "desc": "the grown-up in the water holds the child's hands as the child kicks, splashing water everywhere",
+    "poses": {
+     "adult": "hold",
+     "child": "hold"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -2220,42 +2845,57 @@ export const READERS = {
     "text": "right",
     "others": false,
     "desc": "the child zooms off the end of the slide into the water with a splash",
+    "poses": {
+     "child": "cheer"
+    },
     "wear": {
      "child": "outfit3"
     }
    },
    "6": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
     "desc": "the child takes off one armband, looking determined; the grown-up stands ready a little way off",
+    "poses": {
+     "adult": "stand",
+     "child": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
    },
    "7": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "right",
     "others": false,
     "desc": "the child swims a few strokes towards the grown-up, chin up, kicking hard",
+    "poses": {
+     "adult": "stand",
+     "child": "cheer"
+    },
     "wear": {
      "child": "outfit3"
     }
    },
    "8": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
     "desc": "the child reaches the grown-up's arms; both are cheering",
+    "poses": {
+     "adult": "stand",
+     "child": "stand"
+    },
     "wear": {
      "child": "outfit3"
     }
@@ -2271,12 +2911,16 @@ export const READERS = {
    },
    "10": {
     "cast": [
-     "child",
-     "adult"
+     "adult",
+     "child"
     ],
     "text": "left",
     "others": false,
-    "desc": "In the leisure centre café, the child with damp hair eats chips next to the grown-up, holding up a swimming certificate"
+    "desc": "In the leisure centre café, the child with damp hair eats chips next to the grown-up, holding up a swimming certificate",
+    "poses": {
+     "adult": "cheer",
+     "child": "stand"
+    }
    }
   }
  }

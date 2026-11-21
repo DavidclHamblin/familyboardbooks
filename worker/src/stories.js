@@ -239,7 +239,8 @@ export function setPrompt(story, n) {
   const s = STORIES[story], sc = s.scenes[n];
   const zone = sc.text === "left" ? "right" : "left";
   return "Illustrate the BACKGROUND ONLY for one wide double-page spread of a children's picture book. The scene: " + sc.desc + ". " +
-    "The family (" + sc.cast.map(r => s.roles[r].name).join(", ") + ") will be added later as separate cut-out pictures, so leave every one of them OUT: no family members anywhere, not even partly, and no hands, shadows or footprints of them. " +
+    (sc.cast.length ? "The family (" + sc.cast.map(r => s.roles[r].name).join(", ") + ") will be added later as separate cut-out pictures, so leave every one of them OUT: no family members anywhere, not even partly, and no hands, shadows or footprints of them. "
+      : "None of the family is in this picture. ") +
     "Do draw the place and everything the scene needs around them: the objects they use or look at, the weather, the light and the mood. " +
     (sc.others ? "Other people or animals the scene mentions (not the family) may appear, small and in the background. " : "No people and no animals at all, unless an animal is part of the scene itself and is not the family's pet. ") +
     "LAYOUT: the words of the story will be printed over the " + sc.text + " third of the picture, so keep that third calm and plain (sky, wall, floor or grass). " +
