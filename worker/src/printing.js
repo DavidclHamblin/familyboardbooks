@@ -5,6 +5,7 @@
 //
 // The queue: approving a paid book adds print/queue/<id>. Every 10 minutes the cron takes queued books
 // one step at a time: make the PDFs -> send the job to Lulu -> follow Lulu's status until shipped.
+// Books of one paid order with the same product (meta.pack, e.g. a Learn to Read pack) go as one job, one parcel.
 // LULU_ENV = "sandbox" sends jobs to Lulu's test system, where nothing is printed or charged.
 import puppeteer from "@cloudflare/puppeteer";
 import { lulu, luluEnv, luluReady, printProducts } from "./lulu.js";
@@ -77,19 +78,35 @@ export async function testPdf(env, product, story, part) {
   } finally { await browser.close(); }
 }
 
-function jobBody(env, meta, product, origin) {
-  const file = name => origin + "/api/print/files/" + meta.id + "/" + meta.print.fileKey + "/" + name + ".pdf";
-  const s = meta.ship || {};
+// One Lulu job for one or more books that go to the same address (a Learn to Read pack is several books
+// in one parcel). Each book is a line item with its own PDFs.
+function jobBody(env, metas, product, origin) {
+  const first = metas[0], s = first.ship || {};
+  const file = (m, name) => origin + "/api/print/files/" + m.id + "/" + m.print.fileKey + "/" + name + ".pdf";
   const address = Object.fromEntries(Object.entries({
     name: s.name, organization: s.organization, street1: s.street1, street2: s.street2, city: s.city,
     postcode: s.postcode, state_code: s.state_code, country_code: s.country_code, phone_number: s.phone_number
   }).filter(([, v]) => v));
   return {
-    external_id: meta.order || meta.id, contact_email: env.PRINT_CONTACT_EMAIL || "hello@familyboardbooks.com",
+    external_id: first.order || first.id, contact_email: env.PRINT_CONTACT_EMAIL || "hello@familyboardbooks.com",
     shipping_level: env.PRINT_SHIPPING || "MAIL", shipping_address: address,
-    line_items: [{ external_id: meta.id, title: product.name, quantity: Math.max(1, meta.copies || 1),
-      printable_normalization: { pod_package_id: product.pkg, interior: { source_url: file("interior") }, cover: { source_url: file("cover") } } }]
+    line_items: metas.map(m => ({ external_id: m.id, title: product.name, quantity: Math.max(1, m.copies || 1),
+      printable_normalization: { pod_package_id: product.pkg, interior: { source_url: file(m, "interior") }, cover: { source_url: file(m, "cover") } } }))
   };
+}
+
+// A pack waits for all its books (each approved and with its PDFs made) so they post as one parcel.
+// If a book is still not approved this long after the first one was, the ready ones go without it.
+const PACK_WAIT_MS = 7 * 24 * 3600 * 1000;
+async function packReady(env, meta) {
+  const others = [];
+  for (const sid of (meta.pack || []).filter(x => x !== meta.id)) {
+    const sm = await (await env.BUCKET.get("meta/" + sid + ".json"))?.json();
+    if (sm && sm.paid && !(sm.print && sm.print.jobId)) others.push(sm);
+  }
+  const ready = others.filter(sm => sm.approvedAt && sm.print && sm.print.pdfAt && sm.ship && sm.ship.street1);
+  const waiting = others.length - ready.length;
+  return { books: [meta].concat(ready), waiting, timedOut: Date.now() - (meta.approvedAt || 0) > PACK_WAIT_MS };
 }
 
 // One step for one queued book. Returns a short note for the log.
@@ -107,10 +124,13 @@ async function step(env, id, origin, updateMeta) {
   }
   if (!p.jobId) {
     if (!meta.ship || !meta.ship.street1) return id + ": waiting for a delivery address";
-    const r = await lulu(env, "POST", "/print-jobs/", jobBody(env, meta, product, origin));
+    const pack = await packReady(env, meta);
+    if (pack.waiting && !pack.timedOut) return id + ": waiting for " + pack.waiting + " more book(s) in the pack";
+    const r = await lulu(env, "POST", "/print-jobs/", jobBody(env, pack.books, product, origin));
     if (!r.ok) { await updateMeta(env, id, m => { m.print.error = JSON.stringify(r.data).slice(0, 500); }); return id + ": Lulu refused (" + r.status + ")"; }
-    await updateMeta(env, id, m => { m.print.jobId = r.data.id; m.print.lulu = luluEnv(env); m.print.status = r.data.status && r.data.status.name; m.print.sentAt = Date.now(); delete m.print.error; });
-    return id + ": sent to Lulu as job " + r.data.id;
+    for (const b of pack.books)
+      await updateMeta(env, b.id, m => { m.print.jobId = r.data.id; m.print.lulu = luluEnv(env); m.print.status = r.data.status && r.data.status.name; m.print.sentAt = Date.now(); delete m.print.error; });
+    return id + ": sent to Lulu as job " + r.data.id + (pack.books.length > 1 ? " with " + pack.books.length + " books" : "");
   }
   const r = await lulu(env, "GET", "/print-jobs/" + p.jobId + "/");
   if (!r.ok) return id + ": couldn't read Lulu job " + p.jobId;

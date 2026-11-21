@@ -51,13 +51,14 @@ const SAMPLE = {
   ES: { name: "Price check", street1: "Plaça de Catalunya 1", city: "Barcelona", postcode: "08002", state_code: "B", country_code: "ES", phone_number: "+34 930 000 000" }
 };
 
-// Print cost, postage and VAT for one copy to the UK and Spain, plus the cover size Lulu wants.
-export async function quote(env, product, pkgOverride, pagesOverride) {
-  const pkg = pkgOverride || product.pkg, pages = pagesOverride || product.pages;
-  const out = { lulu: luluEnv(env), pkg, pages, prices: {}, cover: null };
+// Print cost, postage and VAT for one copy (or `qty` copies in one parcel, e.g. a pack) to the UK and Spain,
+// plus the cover size Lulu wants.
+export async function quote(env, product, pkgOverride, pagesOverride, qty) {
+  const pkg = pkgOverride || product.pkg, pages = pagesOverride || product.pages, quantity = qty || 1;
+  const out = { lulu: luluEnv(env), pkg, pages, quantity, prices: {}, cover: null };
   for (const [cc, address] of Object.entries(SAMPLE)) {
     const r = await lulu(env, "POST", "/print-job-cost-calculations/", {
-      line_items: [{ pod_package_id: pkg, page_count: pages, quantity: 1 }],
+      line_items: [{ pod_package_id: pkg, page_count: pages, quantity }],
       shipping_address: address, shipping_option: "MAIL"
     });
     out.prices[cc] = r.ok ? {

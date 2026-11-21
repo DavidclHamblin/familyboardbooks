@@ -58,6 +58,10 @@ on port 8765, and in the browser console run `localStorage.setItem("fbb-api","ht
 - Packs (5 or 10 books, different stories) are one draft per book. Every reader shares one style and outfit, so the
   family's characters are drawn once and copied into the other books with `POST /api/drafts/<id>/copy`
   `{ from, fromToken }` (both books must be Learn to Read books and the caller must hold both tokens).
+- One parcel per pack: when one paid order holds several printed books of the same product, each draft lists
+  the others in `meta.pack`, and the print queue waits until every book is approved and has its PDFs, then sends
+  them to Lulu as one job with a line item per book. A book still not approved 7 days after the first goes
+  without it. `GET /api/print/quote?product=reader&qty=5` prices 5 copies posted together.
 - Print product `reader`: Lulu 8.5 in square paperback, standard colour, 32 pages (`0850X0850FCSTDPB060UW444GXX`),
   printed from `https://www.familylearntoread.com/print.html?story={story}`.
 

@@ -353,6 +353,15 @@ async function onOrderPaid(env, order) {
       if (productFor(env, meta)) { meta.ship = shippingFrom(order); meta.copies = Math.max(1, Math.min(20, copies || 1)); }
     });
   }
+  // Several printed books of the same product in one order (a Learn to Read pack) are posted together:
+  // each draft lists the others in meta.pack, and the print queue sends them to Lulu as one job.
+  const groups = {};
+  for (const id of ids) {
+    const meta = ID_RE.test(id) && await getMeta(env, id), product = meta && productFor(env, meta);
+    if (product) (groups[product.code] = groups[product.code] || []).push(id);
+  }
+  for (const pack of Object.values(groups)) if (pack.length > 1)
+    for (const id of pack) await updateMeta(env, id, meta => { if (meta.pack) return false; meta.pack = pack.slice(0, 20); });
   return ids.length;
 }
 
@@ -366,7 +375,8 @@ async function handle(req, env) {
   if (path === "/api/health") return J({ ok: true, engine: env.ENGINE || "mock", gemini: !!env.GEMINI_API_KEY, openai: !!env.OPENAI_API_KEY, shopify: !!env.SHOPIFY_WEBHOOK_SECRET, lulu: luluReady(env) ? luluEnv(env) : false, browser: !!env.BROWSER, images: !!env.IMAGES });
 
   // Printer price check (Lulu): print cost, postage and VAT to the UK and Spain, and the cover size.
-  // Orders nothing. Products come from PRINT_PRODUCTS; ?pkg= and ?pages= try another Lulu format.
+  // Orders nothing. Products come from PRINT_PRODUCTS; ?pkg= and ?pages= try another Lulu format, ?qty= prices
+  // several copies posted together (a pack).
   // Answers are kept for a day, so repeat visits don't call Lulu again.
   if (path === "/api/print/quote" && m === "GET") {
     if (!luluReady(env)) return E(503, "Lulu keys are not set yet");
@@ -374,15 +384,16 @@ async function handle(req, env) {
     const product = products[code];
     if (!product) return E(404, "Unknown product. Products: " + Object.keys(products).join(", "));
     const pkg = (url.searchParams.get("pkg") || product.pkg || "").toUpperCase(), pages = parseInt(url.searchParams.get("pages") || product.pages, 10);
-    if (!PKG_RE.test(pkg) || !(pages >= 24 && pages <= 200)) return E(400, "Bad pkg or pages");
-    const key = "print/quote/" + luluEnv(env) + "-" + pkg + "-" + pages + ".json";
+    const qty = parseInt(url.searchParams.get("qty") || "1", 10);  // copies in one parcel, e.g. a pack of 5 or 10
+    if (!PKG_RE.test(pkg) || !(pages >= 24 && pages <= 200) || !(qty >= 1 && qty <= 20)) return E(400, "Bad pkg, pages or qty");
+    const key = "print/quote/" + luluEnv(env) + "-" + pkg + "-" + pages + (qty > 1 ? "-x" + qty : "") + ".json";
     const hit = await env.BUCKET.get(key);
     if (hit && Date.parse(hit.uploaded) > Date.now() - 86400000) return J(Object.assign(await hit.json(), { product: code, cached: true }));
     if (env.DRAFT_LIMIT) {
       const { success } = await env.DRAFT_LIMIT.limit({ key: "quote:" + (req.headers.get("CF-Connecting-IP") || "?") });
       if (!success) return E(429, "Too many price checks, try again in a minute");
     }
-    let q; try { q = await quote(env, product, pkg, pages); } catch (e) { return E(502, e.message); }
+    let q; try { q = await quote(env, product, pkg, pages, qty); } catch (e) { return E(502, e.message); }
     if (Object.values(q.prices).every(p => !p.error) && !q.cover.error)  // keep only full answers
       await env.BUCKET.put(key, JSON.stringify(q), { httpMetadata: { contentType: "application/json" } });
     return J(Object.assign(q, { product: code, brand: product.brand, name: product.name }));
