@@ -472,7 +472,8 @@ async function handle(req, env) {
   // Sets: our own reusable pictures for layered books (Learn to Read). Public to read, so any page can show them.
   //   sets/<story>/s<n>                        a scene painted once with none of the family in it
   //   sets/example/c-<role>                    our example family (stand-ins, never a real person)
-  //   sets/example/pose-<role>-<outfit>-<pose> a cut-out pose on flat magenta, keyed out by the site
+  //   sets/example/pose-<role>-costume-<pose>  a cut-out pose on flat magenta, keyed out by the site
+  //   sets/<story>/pose-<role>-outfitN-<pose>   the same in that book's own outfit
   // POST draws one; only our art drafts (ART_DRAFTS, with their secret token) may draw. ?w=web on GET gives a WebP copy.
   let st = /^\/api\/sets\/([a-z0-9-]{2,24})\/(s\d{1,2}|c-[a-z]{2,12}|pose-[a-z]{2,12}-[a-z0-9]{2,12}-[a-z]{2,12})$/.exec(path);
   if (st && m === "GET") return serveSet(env, req, "sets/" + st[1] + "/" + st[2], url.searchParams.get("w") === "web");
@@ -487,8 +488,12 @@ async function handle(req, env) {
       if (!story || story.brand !== "FLR" || !story.scenes[slot.slice(1)]) return E(404, "Unknown scene.");
       text = setPrompt(name, slot.slice(1)); aspect = "16:9";
     } else {
-      const story = STORIES[body.story];  // any Learn to Read story: they share one style and one set of costumes
-      if (name !== "example" || !story || story.brand !== "FLR") return E(400, "Unknown example.");
+      // Our example family lives in sets/example; a pose in a book's own outfit (outfit3… differ from book to book)
+      // lives with that book's scenes, in sets/<story>. Every Learn to Read story shares one style and the usual costumes.
+      if (name !== "example" && !(STORIES[name] && slot.startsWith("pose-") && !slot.split("-")[2].startsWith("costume"))) return E(400, "Unknown example.");
+      if (name !== "example") body.story = name;
+      const story = STORIES[body.story];
+      if (!story || story.brand !== "FLR") return E(400, "Unknown example.");
       if (slot.startsWith("c-")) {
         if (!story.roles[slot.slice(2)]) return E(400, "Unknown role.");
         text = standinPrompt(body.story, slot.slice(2));
