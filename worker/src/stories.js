@@ -244,7 +244,7 @@ export function setPrompt(story, n) {
       : "None of the family is in this picture. ") +
     "Do draw the place and everything the scene needs around them: the objects they use or look at, the weather, the light and the mood. " +
     (sc.others ? "Other people or animals the scene mentions (not the family) may appear, small and in the background. " : "No people and no animals at all, unless an animal is part of the scene itself and is not the family's pet. ") +
-    "LAYOUT: the words of the story will be printed over the " + sc.text + " third of the picture, so keep that third calm and plain (sky, wall, floor or grass). " +
+    "LAYOUT: the words of the story will be printed over the " + sc.text + " third of the picture, so keep that third simple and calm (open sky, soft grass, a plain wall), but it is still part of the same scene and painted in the same style: no blank, white, faded or empty panels, boxes or walls added just to leave room. " +
     "In the " + zone + " two thirds, keep the bottom 45% open: a clear, fairly flat stretch of floor, grass, sand or ground in the foreground, with nothing standing on it, where the characters will stand. " +
     "Eye level is a small child's, looking straight on. Style: " + s.style + ". No text, letters or speech bubbles.";
 }
