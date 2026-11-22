@@ -239,13 +239,14 @@ export const KEY_COLOUR = "one flat, even, pure bright magenta (#FF00FF) filling
 export function setPrompt(story, n) {
   const s = STORIES[story], sc = s.scenes[n];
   const zone = sc.text === "left" ? "right" : "left";
-  return "Illustrate the BACKGROUND ONLY for one wide double-page spread of a children's picture book. The scene: " + sc.desc + ". " +
+  return "Paint ONE single, continuous, wide landscape picture (the background for a children's picture book page), edge to edge, as one view of one place: " +
+    "no panels, frames, borders, split screens, seams, dividing lines, gutters or folds, and not a picture of a book. The scene: " + sc.desc + ". " +
     (sc.cast.length ? "The family (" + sc.cast.map(r => s.roles[r].name).join(", ") + ") will be added later as separate cut-out pictures, so leave every one of them OUT: no family members anywhere, not even partly, and no hands, shadows or footprints of them. "
       : "None of the family is in this picture. ") +
     "Do draw the place and everything the scene needs around them: the objects they use or look at, the weather, the light and the mood. " +
     (sc.others ? "Other people or animals the scene mentions (not the family) may appear, small and in the background. " : "No people and no animals at all, unless an animal is part of the scene itself and is not the family's pet. ") +
-    "LAYOUT: the words of the story will be printed over the " + sc.text + " third of the picture, so keep that third simple and calm (open sky, soft grass, a plain wall), but it is still part of the same scene and painted in the same style: no blank, white, faded or empty panels, boxes or walls added just to leave room. " +
-    "In the " + zone + " two thirds, keep the bottom 45% open: a clear, fairly flat stretch of floor, grass, sand or ground in the foreground, with nothing standing on it, where the characters will stand. " +
+    "Words will be laid over the " + sc.text + " side later, so the " + sc.text + " side should simply be a quieter part of the same view (more sky, grass, floor or wall, with fewer details), continuing naturally with the same light and colours: never a blank, white, faded or separate area. " +
+    "On the " + zone + " side, keep the bottom 45% open: a clear, fairly flat stretch of floor, grass, sand or ground in the foreground, with nothing standing on it, where the characters will stand. " +
     "Eye level is a small child's, looking straight on. Style: " + s.style + ". No text, letters or speech bubbles.";
 }
 
