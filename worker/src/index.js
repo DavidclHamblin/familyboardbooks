@@ -472,7 +472,7 @@ async function handle(req, env) {
   // Sets: our own reusable pictures for layered books (Learn to Read). Public to read, so any page can show them.
   //   sets/<story>/s<n>                        a scene painted once with none of the family in it
   //   sets/example/c-<role>                    our example family (stand-ins, never a real person)
-  //   sets/example/pose-<role>-<outfit>-<pose> a cut-out pose on flat green, keyed out by the site
+  //   sets/example/pose-<role>-<outfit>-<pose> a cut-out pose on flat magenta, keyed out by the site
   // POST draws one; only our art drafts (ART_DRAFTS, with their secret token) may draw. ?w=web on GET gives a WebP copy.
   let st = /^\/api\/sets\/([a-z0-9-]{2,24})\/(s\d{1,2}|c-[a-z]{2,12}|pose-[a-z]{2,12}-[a-z0-9]{2,12}-[a-z]{2,12})$/.exec(path);
   if (st && m === "GET") return serveSet(env, req, "sets/" + st[1] + "/" + st[2], url.searchParams.get("w") === "web");

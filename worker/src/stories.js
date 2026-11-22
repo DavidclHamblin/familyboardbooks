@@ -214,7 +214,7 @@ export function scenePrompt(story, n, villainRef) {
 
 // ---------- Layered pictures (Learn to Read) ----------
 // Each scene is painted ONCE with nobody in it (a "set", kept and reused for every family), and each family member
-// is drawn once in a few cut-out poses on flat green. The site keys out the green and places the poses on the set,
+// is drawn once in a few cut-out poses on flat magenta. The site keys out the magenta and places the poses on the set,
 // so a family costs the same however many books they order.
 export const PEOPLE_POSES = {
   stand: "standing facing us in a relaxed three-quarter view, smiling, arms relaxed",
@@ -232,7 +232,8 @@ export const PET_POSES = {
   run: "running towards the right, all paws off the ground, ears flying",
   lie: "lying down curled up, resting, facing right"
 };
-export const KEY_GREEN = "one flat, even, pure bright green (#00FF00) filling the whole background, with no ground, no shadow, no gradient and no other objects";
+// Magenta, not green: green clothes (the grown-up's jumper) and grass would be keyed out with green.
+export const KEY_COLOUR = "one flat, even, pure bright magenta (#FF00FF) filling the whole background, with no ground, no shadow, no gradient and no other objects";
 
 // The empty set for scene n: the place and its things, with none of the family in it.
 export function setPrompt(story, n) {
@@ -248,13 +249,13 @@ export function setPrompt(story, n) {
     "Eye level is a small child's, looking straight on. Style: " + s.style + ". No text, letters or speech bubbles.";
 }
 
-// A cut-out pose: IMAGE 1 is the character's drawing (c-<role>); outfit is a role key (costume or outfitN).
+// A cut-out pose on flat magenta: IMAGE 1 is the character's drawing (c-<role>); outfit is a role key (costume or outfitN).
 export function posePrompt(story, role, outfit, pose, isPet) {
   const s = STORIES[story], r = s.roles[role], how = (isPet ? PET_POSES : PEOPLE_POSES)[pose];
   const wear = outfit && outfit !== "costume" && r[outfit] ? r[outfit] : null;
   return "IMAGE 1 is the character reference for " + r.name + ". Draw the SAME character again, full body, " + how + ". " +
     "Copy them exactly: the same face, hair, skin tone, age, body shape" + (isPet ? ", fur colours and markings" : "") + (wear ? "" : " and exactly the same clothes") + ". " +
     (wear ? "This time they are wearing " + wear + " instead of their usual clothes. " : "") +
-    "Background: " + KEY_GREEN + ". Do not use any green on the character" + (isPet ? "" : " or their clothes") + ". The whole body is in frame with a clear gap of green all round it; nothing touches the edges. " +
+    "Background: " + KEY_COLOUR + ". Do not use any magenta or purple on the character" + (isPet ? "" : " or their clothes") + ". The whole body is in frame with a clear gap of green all round it; nothing touches the edges. " +
     "Style: " + s.style + ". Draw only this one character. No text or letters.";
 }
