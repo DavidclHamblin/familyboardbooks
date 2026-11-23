@@ -12,17 +12,22 @@ export const READERS = {
     "name": "the child",
     "costume": "a sunny yellow T-shirt, blue jeans and red trainers",
     "standin": "a cheerful five-year-old child with a round face, rosy cheeks and short curly brown hair",
-    "outfit3": "a bright red raincoat with the hood down, blue jeans and red wellington boots"
+    "outfit3": "a bright red raincoat with the hood down, blue jeans and red wellington boots",
+    "outfit4": "a bright red raincoat with the hood down, blue jeans and red wellington boots, with splashes of brown mud up the boots and jeans"
    },
    "adult": {
     "name": "the grown-up",
     "costume": "a green jumper, dark trousers and comfortable brown shoes",
-    "standin": "a friendly, smiling grown-up in their thirties with short dark hair"
+    "standin": "a friendly, smiling grown-up in their thirties with short dark hair",
+    "outfit3": "+holding a big floppy yellow rain hat in both hands, about to put it on",
+    "outfit4": "+with brown mud splashed up their trousers and shoes"
    },
    "pet": {
     "name": "the pet",
     "costume": "nothing at all, just their own fur or feathers and a plain red collar if they wear one",
-    "standin": "a small scruffy brown and white dog with floppy ears and a waggy tail"
+    "standin": "a small scruffy brown and white dog with floppy ears and a waggy tail",
+    "outfit3": "+soaking wet from the rain, fur dripping, with little drops flying off",
+    "outfit4": "+covered all over in splodges of brown mud, looking very pleased"
    }
   },
   "scenes": {
@@ -51,13 +56,15 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the grown-up puts on a huge floppy rain hat; the pet stands in the open doorway already dripping",
+    "desc": "The front of a cosy house in heavy rain, seen from the garden path. On the right, from about 65% to 95% across, the front door stands wide open under a small porch roof, with a dry doorstep and a doormat. The rest is the wet front garden: a stone path with puddles, flowers bending in the rain and rain pouring down everywhere except under the porch",
     "poses": {
      "adult": "hold",
      "pet": "stand"
     },
     "wear": {
-     "child": "outfit3"
+     "child": "outfit3",
+     "adult": "outfit3",
+     "pet": "outfit3"
     }
    },
    "3": {
@@ -98,12 +105,12 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child hops in a big muddy patch, mud splattered up red wellington boots",
+    "desc": "A grassy park with tall trees, a wooden fence and a winding path, in light rain. A big, wide, squelchy brown mud puddle fills the foreground from about 8% to 55% across and runs right down to the bottom edge, with blobs of mud flying up from it. Nothing at all lies in or near the mud: no boots, shoes, clothes or toys",
     "poses": {
      "child": "cheer"
     },
     "wear": {
-     "child": "outfit3"
+     "child": "outfit4"
     }
    },
    "6": {
@@ -112,12 +119,13 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the pet rolls on its back in the mud, completely brown, looking delighted",
+    "desc": "A grassy park with tall trees, a wooden fence and a winding path, in light rain. A big, squelchy brown mud patch fills the foreground from about 40% to 92% across and runs right down to the bottom edge, churned up and splattered, with blobs of mud flicked onto the grass around it",
     "poses": {
-     "pet": "stand"
+     "pet": "roll"
     },
     "wear": {
-     "child": "outfit3"
+     "child": "outfit4",
+     "pet": "outfit4"
     }
    },
    "7": {
@@ -126,12 +134,12 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "A cheerful duck waddles past in the rain; the child points at it",
+    "desc": "A grassy park with tall trees, a wooden fence and a winding path, in the rain. A cheerful round yellow cartoon duck with an orange beak and orange webbed feet, wearing no clothes waddles along the grass in the open at about 55% across, in the middle distance, with clear grass all around it and nothing in front of it; the bottom left of the picture is open wet grass",
     "poses": {
      "child": "point"
     },
     "wear": {
-     "child": "outfit3"
+     "child": "outfit4"
     }
    },
    "8": {
@@ -140,19 +148,19 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "The duck flaps in a puddle beside the child, who copies it with arms out like wings",
+    "desc": "A grassy park with tall trees, a wooden fence and a winding path, in the rain. In the foreground, from about 30% to 60% across, a big shallow rain puddle where a cheerful round yellow cartoon duck with an orange beak and orange webbed feet, wearing no clothes splashes happily, wings flapping and water drops flying. It is the only duck or bird in the picture. The bottom right is open wet grass",
     "poses": {
      "child": "cheer"
     },
     "wear": {
-     "child": "outfit3"
+     "child": "outfit4"
     }
    },
    "9": {
     "cast": [],
     "text": "right",
     "others": false,
-    "desc": "The sun breaks through the clouds, a rainbow over the garden, everything shining and wet",
+    "desc": "A cottage garden just after the rain: the sun shining brightly in a blue sky as the last clouds drift away, a rainbow over the garden, wet grass and flowers sparkling and puddles reflecting the sky. No rain is falling anywhere",
     "wear": {
      "child": "outfit3"
     }
@@ -165,11 +173,16 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "Back indoors, all three are covered in mud; a bubbly bath waits through the bathroom door",
+    "desc": "Back indoors in a hallway with a tiled floor covered in muddy footprints, muddy paw prints and splodges of mud. On the right, through an open door, a bathroom with a big bubbly bath waiting",
     "poses": {
      "adult": "stand",
      "child": "stand",
      "pet": "stand"
+    },
+    "wear": {
+     "child": "outfit4",
+     "adult": "outfit4",
+     "pet": "outfit4"
     }
    }
   }
@@ -2769,12 +2782,13 @@ export const READERS = {
     "name": "the child",
     "costume": "a sunny yellow T-shirt, blue jeans and red trainers",
     "standin": "a cheerful five-year-old child with a round face, rosy cheeks and short curly brown hair",
-    "outfit3": "a bright blue swimming costume with a little yellow star and orange armbands"
+    "outfit3": "bright blue swimwear with a little yellow star (a swimming costume for a girl, swim shorts and a swim top for a boy) and orange armbands"
    },
    "adult": {
     "name": "the grown-up",
     "costume": "a green jumper, dark trousers and comfortable brown shoes",
-    "standin": "a friendly, smiling grown-up in their thirties with short dark hair"
+    "standin": "a friendly, smiling grown-up in their thirties with short dark hair",
+    "outfit3": "plain navy swimwear for the pool (a swimming costume for a woman, swim shorts for a man)"
    }
   },
   "scenes": {
@@ -2835,7 +2849,8 @@ export const READERS = {
      "child": "hold"
     },
     "wear": {
-     "child": "outfit3"
+     "child": "outfit3",
+     "adult": "outfit3"
     }
    },
    "5": {
@@ -2865,7 +2880,8 @@ export const READERS = {
      "child": "stand"
     },
     "wear": {
-     "child": "outfit3"
+     "child": "outfit3",
+     "adult": "outfit3"
     }
    },
    "7": {
@@ -2881,7 +2897,8 @@ export const READERS = {
      "child": "cheer"
     },
     "wear": {
-     "child": "outfit3"
+     "child": "outfit3",
+     "adult": "outfit3"
     }
    },
    "8": {
@@ -2897,7 +2914,8 @@ export const READERS = {
      "child": "stand"
     },
     "wear": {
-     "child": "outfit3"
+     "child": "outfit3",
+     "adult": "outfit3"
     }
    },
    "9": {

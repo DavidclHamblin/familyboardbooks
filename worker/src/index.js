@@ -502,7 +502,7 @@ async function handle(req, env) {
         if (!story.roles[role] || !(isPet ? PET_POSES : PEOPLE_POSES)[pose] || !(outfit === "costume" || story.roles[role][outfit])) return E(400, "Unknown pose.");
         const ref = await loadImage(env, "sets/example/c-" + role + ".png");
         if (!ref) return E(409, "Draw the character first.");
-        refs = [ref]; text = posePrompt(body.story, role, outfit, pose, isPet);
+        refs = [ref]; text = posePrompt(body.story, role, outfit, pose, isPet, body.who);
       }
     }
     let out;
