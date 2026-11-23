@@ -105,7 +105,8 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "A grassy park with tall trees, a wooden fence and a winding path, in light rain. A big, wide, squelchy brown mud puddle fills the foreground from about 8% to 55% across and runs right down to the bottom edge, with blobs of mud flying up from it. Nothing at all lies in or near the mud: no boots, shoes, clothes or toys",
+    "desc": "A grassy park with tall trees, a wooden fence and a winding path, in light rain. Nothing at all lies in or near the mud: no boots, shoes, clothes or toys",
+    "ground": "a big, wide, squelchy brown mud puddle with blobs of mud flying up",
     "poses": {
      "child": "cheer"
     },
@@ -119,7 +120,8 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "A grassy park with tall trees, a wooden fence and a winding path, in light rain. A big, squelchy brown mud patch fills the foreground from about 40% to 92% across and runs right down to the bottom edge, churned up and splattered, with blobs of mud flicked onto the grass around it",
+    "desc": "A grassy park with tall trees, a wooden fence and a winding path, in light rain",
+    "ground": "a big, churned-up, squelchy brown mud patch with mud splattered around it",
     "poses": {
      "pet": "roll"
     },
