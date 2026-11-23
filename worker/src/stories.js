@@ -230,7 +230,8 @@ export const PET_POSES = {
   stand: "standing on all fours, side-on facing right, looking happy",
   sit: "sitting up, facing us, looking happy",
   run: "running towards the right, all paws off the ground, ears flying",
-  lie: "lying down curled up, resting, facing right"
+  lie: "lying down curled up, resting, facing right",
+  roll: "rolling on its back with all four paws in the air, wriggling happily, side-on"
 };
 // Magenta, not green: green clothes (the grown-up's jumper) and grass would be keyed out with green.
 export const KEY_COLOUR = "one flat, even, pure bright magenta (#FF00FF) filling the whole background, with no ground, no shadow, no gradient and no other objects";
@@ -240,7 +241,7 @@ export function setPrompt(story, n) {
   const s = STORIES[story], sc = s.scenes[n];
   const zone = sc.text === "left" ? "right" : "left";
   return "Paint ONE single, continuous, wide landscape picture (the background for a children's picture book page), edge to edge, as one view of one place: " +
-    "no panels, frames, borders, split screens, seams, dividing lines, gutters or folds, and not a picture of a book. The scene: " + sc.desc + ". " +
+    "no panels, frames, borders, split screens, seams, dividing lines, gutters or folds, and not a picture of a book. Nothing changes or lines up differently down the middle: every object, path and horizon runs straight across it. The scene: " + sc.desc + ". " +
     (sc.cast.length ? "The family (" + sc.cast.map(r => s.roles[r].name).join(", ") + ") will be added later as separate cut-out pictures, so leave every one of them OUT: no family members anywhere, not even partly, and no hands, shadows or footprints of them. "
       : "None of the family is in this picture. ") +
     "Do draw the place and everything the scene needs around them: the objects they use or look at, the weather, the light and the mood. " +
@@ -251,12 +252,16 @@ export function setPrompt(story, n) {
 }
 
 // A cut-out pose on flat magenta: IMAGE 1 is the character's drawing (c-<role>); outfit is a role key (costume or outfitN).
-export function posePrompt(story, role, outfit, pose, isPet) {
+// An outfit starting with "+" keeps the usual clothes and adds to them (holding a hat, splashed with mud).
+// who (girl, boy, woman, man…) lets clothes such as swimwear suit the person; skin tone always comes from IMAGE 1.
+export function posePrompt(story, role, outfit, pose, isPet, who) {
   const s = STORIES[story], r = s.roles[role], how = (isPet ? PET_POSES : PEOPLE_POSES)[pose];
-  const wear = outfit && outfit !== "costume" && r[outfit] ? r[outfit] : null;
-  return "IMAGE 1 is the character reference for " + r.name + ". Draw the SAME character again, full body, " + how + ". " +
-    "Copy them exactly: the same face, hair, skin tone, age, body shape" + (isPet ? ", fur colours and markings" : "") + (wear ? "" : " and exactly the same clothes") + ". " +
-    (wear ? "This time they are wearing " + wear + " instead of their usual clothes. " : "") +
-    "Background: " + KEY_COLOUR + ". Do not use any magenta or purple on the character" + (isPet ? "" : " or their clothes") + ". The whole body is in frame with a clear gap of green all round it; nothing touches the edges. " +
+  const wear = outfit && outfit !== "costume" && r[outfit] ? r[outfit] : null, extra = wear && wear[0] === "+" ? wear.slice(1) : null;
+  const person = who && WHO.includes(who) && !ANIMALS.includes(who) ? who : null;
+  return "IMAGE 1 is the character reference for " + r.name + (person ? ", who is a " + person : "") + ". Draw the SAME character again, full body, " + how + ". " +
+    "Copy them exactly: the same face, hair, skin tone, age, body shape" + (isPet ? ", fur colours and markings" : "") + (wear && !extra ? "" : " and exactly the same clothes") + ". " +
+    (extra ? "This time they are " + extra + ". " : wear ? "This time they are wearing " + wear + " instead of their usual clothes" + (person ? ", in the version that suits a " + person : "") + ". " : "") +
+    (isPet ? "" : "Their arms, hands, legs and feet have the same skin tone as their face. ") +
+    "Background: " + KEY_COLOUR + ". Do not use any magenta or purple on the character" + (isPet ? "" : " or their clothes") + ". The whole body is in frame with a clear gap of magenta all round it; nothing touches the edges. " +
     "Style: " + s.style + ". Draw only this one character. No text or letters.";
 }
