@@ -231,7 +231,7 @@ export const PET_POSES = {
   sit: "sitting up, facing us, looking happy",
   run: "running towards the right, all paws off the ground, ears flying",
   lie: "lying down curled up, resting, facing right",
-  roll: "rolling on its back with all four paws in the air, wriggling happily, side-on"
+  roll: "lying flat on its back, belly up, with all four legs waving in the air, wriggling happily, seen side-on"
 };
 // Magenta, not green: green clothes (the grown-up's jumper) and grass would be keyed out with green.
 export const KEY_COLOUR = "one flat, even, pure bright magenta (#FF00FF) filling the whole background, with no ground, no shadow, no gradient and no other objects";

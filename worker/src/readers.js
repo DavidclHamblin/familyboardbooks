@@ -27,7 +27,7 @@ export const READERS = {
     "costume": "nothing at all, just their own fur or feathers and a plain red collar if they wear one",
     "standin": "a small scruffy brown and white dog with floppy ears and a waggy tail",
     "outfit3": "+soaking wet from the rain, fur dripping, with little drops flying off",
-    "outfit4": "+covered all over in splodges of brown mud, looking very pleased"
+    "outfit4": "+covered all over in thick brown mud from nose to tail, the fur caked and dripping with it, looking very pleased"
    }
   },
   "scenes": {
