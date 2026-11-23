@@ -268,7 +268,7 @@ export const READERS = {
     "cast": [],
     "text": "right",
     "others": false,
-    "desc": "Under the water of the park pond, seen from the side: ONE continuous underwater view with the same blue-green water colour and the same pebbly pond floor running all the way across, and tall green water weeds swaying across the whole width. A big golden-orange fish with big friendly eyes and a long, flowing, floaty tail hides among the weeds, near the middle of the left half"
+    "desc": "Looking down into the clear, shallow park pond from the grassy bank, one continuous view of water with pebbles, lily pads and tall green water weeds across the whole width. A big golden-orange fish with big friendly eyes and a long, flowing, floaty tail hides among the weeds, near the middle of the left half, its long tail showing"
    },
    "6": {
     "cast": [
