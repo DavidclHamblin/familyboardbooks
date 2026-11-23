@@ -198,7 +198,9 @@ export const READERS = {
    "child": {
     "name": "the child",
     "costume": "a sunny yellow T-shirt, blue jeans and red trainers",
-    "standin": "a cheerful five-year-old child with a round face, rosy cheeks and short curly brown hair"
+    "standin": "a cheerful five-year-old child with a round face, rosy cheeks and short curly brown hair",
+    "outfit3": "+carrying a small fishing net with a round green rim, a short wooden handle and white netting in one hand and an empty glass jam jar with a red lid in the other",
+    "outfit4": "+holding up a small fishing net with a round green rim, a short wooden handle and white netting, empty and dripping, in one hand and an empty glass jam jar with a red lid in the other, looking surprised with eyes wide and mouth open"
    },
    "adult": {
     "name": "the grown-up",
@@ -208,7 +210,10 @@ export const READERS = {
    "pet": {
     "name": "the pet",
     "costume": "nothing at all, just their own fur or feathers and a plain red collar if they wear one",
-    "standin": "a small scruffy brown and white dog with floppy ears and a waggy tail"
+    "standin": "a small scruffy brown and white dog with floppy ears and a waggy tail",
+    "outfit3": "+leaning right forward with its head stretched down low, nose almost touching the water, staring hard",
+    "outfit4": "+soaking wet, standing in shallow pond water up to its tummy with a big splash of water flying up around it",
+    "outfit5": "+soaking wet, the fur flattened and dripping with pond water, drops falling all around it"
    }
   },
   "scenes": {
@@ -219,10 +224,13 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child and the grown-up walk through a sunny park towards a small pond with reeds",
+    "desc": "A sunny park with a small pond fringed with reeds and lily pads, trees behind. A path leads towards the pond. Nothing lies on the ground",
     "poses": {
      "adult": "walk",
      "child": "walk"
+    },
+    "wear": {
+     "child": "outfit3"
     }
    },
    "2": {
@@ -231,7 +239,7 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the pet trots behind them with its tail high",
+    "desc": "A sunny park with a small pond fringed with reeds and lily pads, trees behind, seen from the path: one continuous view with the same grass, path and sky all the way across",
     "poses": {
      "pet": "run"
     }
@@ -242,22 +250,25 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child holds up a little fishing net and an empty glass jar, grinning",
+    "desc": "A sunny park with a small pond fringed with reeds and lily pads, trees behind, on a sunny day. Nothing at all lies on the ground or on the rocks: no net, jar, bucket or toys",
     "poses": {
      "child": "hold"
+    },
+    "wear": {
+     "child": "outfit3"
     }
    },
    "4": {
     "cast": [],
     "text": "left",
     "others": false,
-    "desc": "Looking down into the clear pond: lots of small orange and silver fish"
+    "desc": "Looking down into a clear, shallow park pond from the bank: lots of small orange and silver fish swimming among pebbles, weeds and lily pads, one continuous view of water"
    },
    "5": {
     "cast": [],
     "text": "right",
     "others": false,
-    "desc": "A big golden fish with a long flowing tail hides among green water weeds"
+    "desc": "Under the water of the park pond, one continuous underwater view: A big golden-orange fish with big friendly eyes and a long, flowing, floaty tail hides among tall green water weeds, near the middle of the left half"
    },
    "6": {
     "cast": [
@@ -265,16 +276,29 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the child kneels at the edge and dips the net into the water, concentrating hard",
+    "desc": "A sunny park with a small pond fringed with reeds and lily pads, trees behind. The pond fills the foreground on the left half of the picture, right down to the bottom edge, with the bank and grass on the right. Nothing lies on the bank: no net, jar or bucket",
+    "ground": "the grassy, muddy bank right at the water's edge, with the pond water just in front, on its left",
     "poses": {
      "child": "crouch"
+    },
+    "wear": {
+     "child": "outfit3"
     }
    },
    "7": {
-    "cast": [],
+    "cast": [
+     "child"
+    ],
     "text": "right",
     "others": false,
-    "desc": "The big fish darts away in a swirl of bubbles; the net comes up empty"
+    "desc": "A sunny park with a small pond fringed with reeds and lily pads, trees behind. In the pond, at about 55% across, the big golden-orange fish with big friendly eyes and a long, flowing, floaty tail darts away in a swirl of bubbles and ripples. Nothing lies on the bank",
+    "ground": "the grassy bank at the water's edge",
+    "poses": {
+     "child": "hold"
+    },
+    "wear": {
+     "child": "outfit4"
+    }
    },
    "8": {
     "cast": [
@@ -282,9 +306,13 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the pet leans right over the edge, nose almost touching the water, staring at the big fish",
+    "desc": "A sunny park with a small pond fringed with reeds and lily pads, trees behind. The clear pond water fills the foreground from about 35% to 62% across, right down to the bottom edge, and in it, at about 50% across, the big golden-orange fish with big friendly eyes and a long, flowing, floaty tail looks up out of the water",
+    "ground": "the grassy bank at the very edge of the pond",
     "poses": {
      "pet": "stand"
+    },
+    "wear": {
+     "pet": "outfit3"
     }
    },
    "9": {
@@ -293,9 +321,13 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the pet tumbles into the shallow pond with a big splash; the fish swims off",
+    "desc": "A sunny park with a small pond fringed with reeds and lily pads, trees behind. The pond fills the whole foreground. Far off in the water at about 60% across, the big golden-orange fish with big friendly eyes and a long, flowing, floaty tail swims away",
+    "ground": "the shallow pond water itself, with ripples and splashes, reaching the bottom edge",
     "poses": {
-     "pet": "run"
+     "pet": "stand"
+    },
+    "wear": {
+     "pet": "outfit4"
     }
    },
    "10": {
@@ -306,11 +338,15 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the grown-up lifts a soggy the pet out of the water while the child laughs",
+    "desc": "A sunny park with a small pond fringed with reeds and lily pads, trees behind, seen from the grassy bank. Wet paw prints and a puddle of pond water on the path",
     "poses": {
-     "adult": "hold",
+     "adult": "stand",
      "child": "stand",
      "pet": "stand"
+    },
+    "wear": {
+     "child": "outfit3",
+     "pet": "outfit5"
     }
    }
   }
