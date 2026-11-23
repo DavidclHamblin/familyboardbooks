@@ -247,7 +247,8 @@ export function setPrompt(story, n) {
     "Do draw the place and everything the scene needs around them: the objects they use or look at, the weather, the light and the mood. " +
     (sc.others ? "Other people or animals the scene mentions (not the family) may appear, small and in the background. " : "No people and no animals at all, unless an animal is part of the scene itself and is not the family's pet. ") +
     "Words will be laid over the " + sc.text + " side later, so the " + sc.text + " side should simply be a quieter part of the same view (more sky, grass, floor or wall, with fewer details), continuing naturally with the same light and colours: never a blank, white, faded or separate area. " +
-    "On the " + zone + " side, keep the bottom 45% open: a clear, fairly flat stretch of floor, grass, sand or ground in the foreground, with nothing standing on it, where the characters will stand. " +
+    (sc.ground ? "On the " + zone + " side, the bottom 45% is where the characters will stand, and it is " + sc.ground + ", reaching the bottom edge, with nothing standing on it. "
+      : "On the " + zone + " side, keep the bottom 45% open: a clear, fairly flat stretch of floor, grass, sand or ground in the foreground, with nothing standing on it, where the characters will stand. ") +
     "Eye level is a small child's, looking straight on. Style: " + s.style + ". No text, letters or speech bubbles.";
 }
 
