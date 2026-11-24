@@ -1,6 +1,10 @@
 import { STORIES, WHO, WHERE, characterPrompt, standinPrompt, villainPrompt, scenePrompt, setPrompt, posePrompt, PEOPLE_POSES, PET_POSES } from "./stories.js";
 import { PKG_RE, luluEnv, luluReady, printProducts, quote } from "./lulu.js";
 import { productFor, shippingFrom, enqueue, servePrintFile, runPrintQueue, testPdf } from "./printing.js";
+import { retention, keepPage, deleteAt } from "./retention.js";
+import { report, cleanupProblems } from "./problems.js";
+import { shopifyReady } from "./shopify.js";
+import { mailReady } from "./mail.js";
 /* Family Board Books: photo storage and cartoon pipeline (Cloudflare Worker + R2, EU jurisdiction).
 
    Storage layout in the R2 bucket:
@@ -15,8 +19,8 @@ import { productFor, shippingFrom, enqueue, servePrintFile, runPrintQueue, testP
 
    Free preview: before payment a draft can make FREE_SLOTS cartoons (two pages) with a few redos.
    Shopify's orders/paid webhook marks the draft paid, which unlocks the whole book.
-   A daily cron deletes unpaid drafts, originals after printing, and cartoons 30 days after
-   delivery unless the customer chose to keep them. */
+   A daily cron deletes unpaid drafts and originals after printing. Paid drafts (cartoons, print files) are
+   kept for a year after posting, with three reminder emails first (retention.js). */
 
 const SLOT_RE = /^(p\d{1,3}-\d{1,2}|cover-front|cover-back|c-[a-z]{2,12}|s\d{1,2}|pose-[a-z]{2,12}-[a-z0-9]{2,12}-[a-z]{2,12})$/;
 const ID_RE = /^[a-z0-9]{20}$/;
@@ -146,6 +150,7 @@ async function deleteDraft(env, id) {
   await deletePrefix(env, "orig/" + id + "/");
   await deletePrefix(env, "toon/" + id + "/");
   await deletePrefix(env, "print/" + id + "/");
+  await deletePrefix(env, "problems/" + id + "/");
   await env.BUCKET.delete(["meta/" + id + ".json", "print/queue/" + id]);
 }
 
@@ -153,6 +158,7 @@ function publicStatus(meta) {
   return {
     id: meta.id, book: meta.book, style: meta.style, paid: !!meta.paid, approved: !!meta.approvedAt,
     keep: !!meta.keep, pages: meta.pages || null, cover: meta.cover || null,
+    keptUntil: deleteAt(meta) || null,  // when a paid book's files are due to be deleted (null until it's posted)
     photos: Object.keys(meta.slots).filter(s => meta.slots[s].orig),
     cartoons: Object.keys(meta.slots).filter(s => meta.slots[s].toon),
     // Story scenes drawn at print size (PRINT_IMAGE_SIZE). A paid book redraws its other scenes before printing.
@@ -369,6 +375,10 @@ async function onOrderPaid(env, order) {
     await updateMeta(env, id, meta => {
       if (meta.paid) return false;
       meta.paid = true; meta.paidAt = Date.now(); meta.order = String(order.name || order.id || "");
+      if (order.admin_graphql_api_id) meta.orderGid = String(order.admin_graphql_api_id);  // so printing can mark it in Shopify
+      if (order.email) meta.email = String(order.email);  // for the reminders before files are deleted
+      const line = (order.line_items || []).find(l => (l.properties || []).some(a => a.name === "_draft" && String(a.value) === id));
+      meta.brandCode = ((line && line.sku) || "FBB").split("-")[0];  // FBB, FST, FLR...: which brand's name and email to use
       // Books that a printer posts keep the delivery address until the draft is deleted.
       if (productFor(env, meta)) { meta.ship = shippingFrom(order); meta.copies = Math.max(1, Math.min(20, copies || 1)); }
     });
@@ -392,7 +402,7 @@ async function handle(req, env) {
   if (m === "OPTIONS") return new Response(null, { status: 204, headers: h });
   const J = (d, s) => json(d, s, h), E = (s, msg) => err(s, msg, h);
 
-  if (path === "/api/health") return J({ ok: true, engine: env.ENGINE || "mock", gemini: !!env.GEMINI_API_KEY, openai: !!env.OPENAI_API_KEY, shopify: !!env.SHOPIFY_WEBHOOK_SECRET, lulu: luluReady(env) ? luluEnv(env) : false, browser: !!env.BROWSER, images: !!env.IMAGES });
+  if (path === "/api/health") return J({ ok: true, engine: env.ENGINE || "mock", gemini: !!env.GEMINI_API_KEY, openai: !!env.OPENAI_API_KEY, shopify: !!env.SHOPIFY_WEBHOOK_SECRET, lulu: luluReady(env) ? luluEnv(env) : false, browser: !!env.BROWSER, images: !!env.IMAGES, shopifyAdmin: shopifyReady(env), mail: mailReady(env) });
 
   // Printer price check (Lulu): print cost, postage and VAT to the UK and Spain, and the cover size.
   // Orders nothing. Products come from PRINT_PRODUCTS; ?pkg= and ?pages= try another Lulu format, ?qty= prices
@@ -452,6 +462,18 @@ async function handle(req, env) {
   // Lulu fetches a book's print files from here (the address holds the book's secret file key).
   let pf = /^\/api\/print\/files\/([a-z0-9]{20})\/([a-z0-9]{24})\/(interior|cover)\.pdf$/.exec(path);
   if (pf && m === "GET") return (await servePrintFile(env, pf[1], pf[2], pf[3] + ".pdf", getMeta, timingSafeEqual)) || err(404, "Not found");
+
+  // "Keep my files another year", from the reminder email (a page with a button; POST does it).
+  let kp = /^\/api\/keep\/([a-z0-9]{20})\/([a-z0-9]{24})$/.exec(path);
+  if (kp && (m === "GET" || m === "POST")) return keepPage(env, req, kp[1], kp[2], getMeta, updateMeta, timingSafeEqual);
+
+  // A problem settled: delete its photos and report (ADMIN_TOKEN).
+  let pd = /^\/api\/admin\/problems\/([a-z0-9]{20})\/([a-z0-9]{10})$/.exec(path);
+  if (pd && m === "DELETE") {
+    const a = /^Bearer (.+)$/.exec(req.headers.get("Authorization") || "");
+    if (!env.ADMIN_TOKEN || !a || !timingSafeEqual(a[1], env.ADMIN_TOKEN)) return err(403, "Not allowed");
+    return json({ ok: true, deleted: await deletePrefix(env, "problems/" + pd[1] + "/" + pd[2] + "/") });
+  }
 
   // Status changes from us or the printer integration: printed, delivered.
   let mm = /^\/api\/admin\/drafts\/([a-z0-9]+)\/status$/.exec(path);
@@ -564,6 +586,12 @@ async function handle(req, env) {
   }
 
   if (rest === "" && m === "DELETE") { await deleteDraft(env, id); return J({ ok: true, deleted: true }); }
+
+  // Report a problem with a paid order: { reason, details, photos: [base64 JPEG] } (problems.js).
+  if (rest === "/problems" && m === "POST") {
+    const body = await req.json().catch(() => ({}));
+    return J(await report(env, meta, body, meta.brandCode || ((productFor(env, meta) || {}).brand) || "FBB", httpErr), 201);
+  }
 
   // Copy drawn characters from another of the family's books: POST /copy { from, fromToken }.
   // Learn to Read packs are several books with one cast; every reader shares one style and outfit,
@@ -754,8 +782,10 @@ async function handle(req, env) {
 
 // ---------- daily clean-up ----------
 async function cleanup(env) {
-  const now = Date.now(), unpaidDays = num(env.UNPAID_DAYS, 14), keepAfterDelivery = 30, origBackstop = 60;
-  let cursor, removed = 0;
+  const now = Date.now(), unpaidDays = num(env.UNPAID_DAYS, 14), origBackstop = 60;
+  let cursor, removed = 0, reminded = 0, checked = 0;
+  const retentionCtx = { origin: env.PUBLIC_URL || "https://familyboardbooks-api.silent-forest-c98a.workers.dev", updateMeta, deleteDraft,
+    brandCode: meta => meta.brandCode || ((productFor(env, meta) || {}).brand) || "FBB" };
   const arts = (env.ART_DRAFTS || "").split(",").map(x => x.trim());
   do {
     const list = await env.BUCKET.list({ prefix: "meta/", cursor });
@@ -768,15 +798,19 @@ async function cleanup(env) {
         await deletePrefix(env, "orig/" + meta.id + "/");
         await updateMeta(env, meta.id, m => { Object.values(m.slots).forEach(s => { s.orig = false; }); }).catch(() => {});
       }
-      if (meta.paid && !meta.keep && meta.deliveredAt && now - meta.deliveredAt > keepAfterDelivery * DAY) { await deleteDraft(env, meta.id); removed++; }
+      if (meta.paid && ++checked <= 400) {  // at most 400 a day, so the run stays short (the rest wait a day)
+        const r = await retention(env, meta, now, retentionCtx);
+        if (r === "deleted") removed++; else if (r === "reminded") reminded++;
+      }
     }
     cursor = list.truncated ? list.cursor : undefined;
   } while (cursor);
+  await cleanupProblems(env).catch(e => console.error("problems cleanup", e.message));
   const keepStats = [today(), new Date(now - DAY).toISOString().slice(0, 10)];
   const stats = await env.BUCKET.list({ prefix: "stats/" });
   const old = stats.objects.map(o => o.key).filter(k => !keepStats.some(d => k.includes(d)));
   if (old.length) await env.BUCKET.delete(old);
-  console.log("cleanup removed", removed);
+  console.log("cleanup removed", removed, "reminded", reminded);
 }
 
 export default {

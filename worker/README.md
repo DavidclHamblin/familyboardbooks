@@ -39,11 +39,18 @@ they are sent to the model with every photo so all cartoons share one look.
 - Free preview: 6 cartoons (two pages) and 10 tries per book before payment (`FREE_SLOTS`, `FREE_GENS`).
 - At most 5 new books per minute from one connection.
 - Unpaid previews are deleted after 14 days; originals 60 days after payment at the latest
-  (immediately when marked printed); cartoons 30 days after delivery unless the customer chose to keep them.
+  (immediately when marked printed).
+- Paid items' cartoons and print files are kept for 1 year after posting (Lulu "shipped", or marked delivered;
+  a second year if the customer ticked "keep"). Three reminder emails go 30, 14 and 3 days before deletion, from the
+  brand's own address, with a PDF copy link and a "keep them another year" button (`/api/keep/<draft>/<key>`).
+  Nothing is deleted before all three went out; without `MAIL_API_KEY` files simply wait (`src/retention.js`).
 - Mark an order printed or delivered:
   `curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -d '{"status":"printed"}' https://…/api/admin/drafts/<id>/status`
 
 ## Test locally
+
+`node test/flows.test.mjs` checks the Shopify marking, the 1-year keep with reminders and problem reports offline
+(fake R2, Shopify, Lulu and email).
 
 `npx wrangler dev` (with a `.dev.vars` file setting `ALLOWED_ORIGINS="http://localhost:8765"`), serve `dist/`
 on port 8765, and in the browser console run `localStorage.setItem("fbb-api","http://127.0.0.1:8787")`.
@@ -89,3 +96,20 @@ Hardcover books are printed by Lulu through its Print API. One Lulu account serv
 - Screen copies: `GET /api/drafts/<id>/cartoons/<slot>?w=web` returns a 1600px WebP made once with Cloudflare Images
   (binding `IMAGES`), so proof pages don't download print-size pictures. Without the binding it sends the full picture.
 - A printed book can only be approved once every story scene is drawn at print size (2K or 4K).
+- Shopify (`src/shopify.js`): when a book's job goes to Lulu, its order lines (and add-ons without a draft, such as
+  the gift box) are marked fulfilled in Shopify without emailing the customer, so the customer's Cancel button goes
+  away once printing starts. When Lulu ships, the tracking is added and Shopify sends its shipping email. Needs
+  `SHOPIFY_ADMIN_TOKEN` or `SHOPIFY_CLIENT_ID` + `SHOPIFY_CLIENT_SECRET` (scopes read_orders,
+  read/write_merchant_managed_fulfillment_orders); without them printing works as before.
+
+## Problem reports
+
+`POST /api/drafts/<id>/problems` with the book's token and `{ reason, details, photos: [base64 JPEG] }` (reasons:
+damaged, fault, proof, pieces, lost, other; up to 4 photos of 3 MB). The report and photos are stored privately in
+`problems/<draft>/<report>/` and emailed to the brand's hello@ inbox with the photos attached and the customer as
+reply-to. Delete them when settled: `DELETE /api/admin/problems/<draft>/<report>` (ADMIN_TOKEN); otherwise after 90 days.
+
+## Email
+
+`MAIL_API_KEY` is a Zoho ZeptoMail (EU) Send Mail token. `BRANDS` in `wrangler.toml` gives each SKU prefix its name,
+website and hello@ address; each address's domain must be verified in ZeptoMail.

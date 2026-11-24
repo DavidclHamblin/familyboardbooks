@@ -58,6 +58,17 @@ LULU_ENV = "live"
 # A new brand (e.g. learn-to-read books, FLR) adds its own rows here.
 PRINT_PRODUCTS = '{"storybook":{"brand":"FST","name":"Family Storybooks hardcover, 8.5 in square","pkg":"0850X0850FCPRECW080CW444GXX","pages":28,"bookPrefix":"fst-","printUrl":"https://www.familystorybooks.co.uk/print.html?story={story}"},"reader":{"brand":"FLR","name":"Family Learn to Read paperback, 8.5 in square","pkg":"0850X0850FCSTDPB060UW444GXX","pages":32,"bookPrefix":"flr-","printUrl":"https://www.familylearntoread.com/print.html?story={story}"}}'
 
+# The shared Shopify store. Printing marks an order "being made" there when it goes to the printer (no more
+# self-service cancel), then adds the tracking. Needs SHOPIFY_ADMIN_TOKEN, or SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET.
+SHOPIFY_SHOP = "nuwppy-0s.myshopify.com"
+
+# Each brand by SKU prefix: the name and hello@ address customers see in our own emails (file reminders),
+# and where problem reports go. An address must be on a domain verified in ZeptoMail before it can send.
+# Brands without their own email domain yet use hello@familyboardbooks.com.
+BRANDS = '{"FBB":{"name":"Family Board Books","site":"https://www.familyboardbooks.com","email":"hello@familyboardbooks.com"},"FST":{"name":"Family Storybooks","site":"https://www.familystorybooks.co.uk","email":"hello@familystorybooks.co.uk"},"FLR":{"name":"Family Learn to Read","site":"https://www.familylearntoread.com","email":"hello@familyboardbooks.com"},"FPC":{"name":"Family Photo Calendars","site":"https://www.familyphotocalendars.com","email":"hello@familyboardbooks.com"},"FJP":{"name":"Family Jigsaw Puzzles","site":"https://www.familyjigsawpuzzles.com","email":"hello@familyboardbooks.com"},"default":{"name":"Our Family Presents","site":"https://www.ourfamilypresents.com","email":"hello@familyboardbooks.com"}}'
+
 # Secrets (set with `npx wrangler secret put NAME`, never written in this file):
 #   GEMINI_API_KEY, OPENAI_API_KEY, SHOPIFY_WEBHOOK_SECRET, ADMIN_TOKEN, TURNSTILE_SECRET (optional),
+#   SHOPIFY_ADMIN_TOKEN (or SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET): marks orders "being made" and adds tracking,
+#   MAIL_API_KEY (Zoho ZeptoMail, EU): file reminder emails and problem reports,
 #   LULU_CLIENT_KEY, LULU_CLIENT_SECRET (one Lulu account for every brand; live keys since 20 Nov 2026; sandbox keys only with LULU_ENV = "sandbox")
