@@ -289,6 +289,29 @@ async function serveSet(env, req, key, web) {
   if (!obj) return err(404, "Not found", h);
   return new Response(obj.body, { headers: Object.assign({ "Content-Type": obj.httpMetadata?.contentType || "image/png", "ETag": obj.httpEtag }, h) });
 }
+// Our own drawing of a role, sent beside a family's photo (or a stand-in) only to show the house style.
+// Learn to Read: the example family in R2 (sets/example/c-<role>.png), flat ink style.
+// Family Storybooks: the example character on the storybook site (assets/img/<story>/<role>.webp), hand-painted
+// style; copied into R2 (style/fst/...) the first time so later drawings don't fetch it again.
+const STORYBOOK_ART = "https://www.familystorybooks.co.uk/assets/img/";
+async function styleImage(env, story, storyKey, role) {
+  if (!story || !/^[a-z0-9-]+$/.test(storyKey + role)) return null;
+  if (story.brand === "FLR") { const img = await loadImage(env, "sets/example/c-" + role + ".png"); return img && Object.assign(img, { style: "flat" }); }
+  if (story.brand) return null;
+  const key = "style/fst/" + storyKey + "/" + role + ".webp";
+  let img = await loadImage(env, key);
+  if (!img) {
+    try {
+      const res = await fetch(STORYBOOK_ART + storyKey + "/" + role + ".webp");
+      if (!res.ok) return null;
+      const bytes = await res.arrayBuffer();
+      await env.BUCKET.put(key, bytes, { httpMetadata: { contentType: "image/webp" } });
+      img = { bytes, type: "image/webp" };
+    } catch (e) { console.error("style image failed", key, e.message); return null; }
+  }
+  return Object.assign(img, { style: "painted" });
+}
+
 async function loadImage(env, key) {
   const o = await env.BUCKET.get(key);
   return o ? { bytes: await o.arrayBuffer(), type: o.httpMetadata?.contentType || "image/png" } : null;
@@ -737,16 +760,16 @@ async function handle(req, env) {
       catch (e) { console.error("pose failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this one. Please try again."); }
     } else if (noPhoto) {
       // Learn to Read: our example family's drawing of this role shows the house style (sets/example/c-<role>).
-      const styleImg = slot !== "c-villain" && story.brand === "FLR" ? await loadImage(env, "sets/example/c-" + slot.slice(2) + ".png") : null;
-      const text = slot === "c-villain" ? villainPrompt(body.story) : standinPrompt(body.story, slot.slice(2), !!styleImg);
+      const styleImg = slot !== "c-villain" ? await styleImage(env, story, body.story, slot.slice(2)) : null;
+      const text = slot === "c-villain" ? villainPrompt(body.story) : standinPrompt(body.story, slot.slice(2), styleImg && styleImg.style);
       try { out = await drawStory(env, styleImg ? [styleImg] : [], text, "3:4"); }
       catch (e) { console.error("stand-in failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this one. Please try again."); }
     } else {
     const obj = await env.BUCKET.get("orig/" + id + "/" + slot);
     if (!obj) { await release(false); return E(404, "Upload the photo first."); }
     const photo = { bytes: await obj.arrayBuffer(), type: obj.httpMetadata?.contentType || "image/jpeg" };
-    const styleImg = isChar && story.brand === "FLR" ? await loadImage(env, "sets/example/c-" + slot.slice(2) + ".png") : null;
-    try { out = isChar ? await drawStory(env, styleImg ? [photo, styleImg] : [photo], characterPrompt(body.story, slot.slice(2), body.who, body.where, !!styleImg), "3:4") : await makeCartoon(env, photo, style); }
+    const styleImg = isChar ? await styleImage(env, story, body.story, slot.slice(2)) : null;
+    try { out = isChar ? await drawStory(env, styleImg ? [photo, styleImg] : [photo], characterPrompt(body.story, slot.slice(2), body.who, body.where, styleImg && styleImg.style), "3:4") : await makeCartoon(env, photo, style); }
     catch (e) { console.error("cartoon failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this one. Please try again, or try a different photo."); }
     }
     sizeDrawn = isScene ? (out.engine === "openai" ? "1K" : (out.size || "1K")) : null;
