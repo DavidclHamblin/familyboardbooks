@@ -9,6 +9,7 @@
 // LULU_ENV = "sandbox" sends jobs to Lulu's test system, where nothing is printed or charged.
 import puppeteer from "@cloudflare/puppeteer";
 import { lulu, luluEnv, luluReady, printProducts } from "./lulu.js";
+import { shopifyReady, markInProduction, addTracking } from "./shopify.js";
 
 const QUEUE = "print/queue/";
 const DONE = ["SHIPPED", "REJECTED", "CANCELED"];
@@ -130,8 +131,10 @@ async function step(env, id, origin, updateMeta) {
     if (!r.ok) { await updateMeta(env, id, m => { m.print.error = JSON.stringify(r.data).slice(0, 500); }); return id + ": Lulu refused (" + r.status + ")"; }
     for (const b of pack.books)
       await updateMeta(env, b.id, m => { m.print.jobId = r.data.id; m.print.lulu = luluEnv(env); m.print.status = r.data.status && r.data.status.name; m.print.sentAt = Date.now(); delete m.print.error; });
+    await shopifyInProduction(env, pack.books.map(b => b.id), updateMeta);
     return id + ": sent to Lulu as job " + r.data.id + (pack.books.length > 1 ? " with " + pack.books.length + " books" : "");
   }
+  if (shopifyReady(env) && !p.fulfillmentId && meta.orderGid) await shopifyInProduction(env, [id].concat((meta.pack || []).filter(x => x !== id)), updateMeta);
   const r = await lulu(env, "GET", "/print-jobs/" + p.jobId + "/");
   if (!r.ok) return id + ": couldn't read Lulu job " + p.jobId;
   const status = r.data.status && r.data.status.name;
@@ -141,8 +144,35 @@ async function step(env, id, origin, updateMeta) {
     if (status === "IN_PRODUCTION" || status === "SHIPPED") m.printedAt = m.printedAt || Date.now();
     if (status === "SHIPPED") m.print.shippedAt = m.print.shippedAt || Date.now();
   });
+  // Lulu has posted it: add the tracking to the Shopify order, which emails the customer. Once per parcel
+  // (a pack's books share one), retried on later runs if Shopify fails.
+  const fid = p.fulfillmentId && p.fulfillmentId !== "none" ? p.fulfillmentId : null;
+  if (status === "SHIPPED" && tracking.length && fid && !p.trackingSentAt) {
+    try {
+      await addTracking(env, fid, tracking, "Lulu");
+      for (const b of [id].concat((meta.pack || []).filter(x => x !== id))) await updateMeta(env, b, m => { if (m.print) m.print.trackingSentAt = Date.now(); }).catch(() => {});
+    } catch (e) {
+      await updateMeta(env, id, m => { m.print.shopifyError = String(e.message).slice(0, 300); });
+      return id + ": Lulu says SHIPPED, tracking not yet in Shopify";
+    }
+  }
   if (DONE.includes(status)) await env.BUCKET.delete(QUEUE + id);
   return id + ": Lulu says " + status;
+}
+
+// The order's lines for these books are marked fulfilled in Shopify (customer not told), so the customer can no
+// longer cancel a book that is being printed. Tracking is added when the printer posts it. Failures are kept on
+// the draft and retried on the next run; printing never waits for Shopify.
+async function shopifyInProduction(env, ids, updateMeta) {
+  if (!shopifyReady(env)) return;
+  const first = await (await env.BUCKET.get("meta/" + ids[0] + ".json"))?.json();
+  if (!first || !first.orderGid || (first.print && first.print.fulfillmentId)) return;
+  try {
+    const fid = await markInProduction(env, first.orderGid, ids);
+    for (const b of ids) await updateMeta(env, b, m => { m.print = m.print || {}; m.print.fulfillmentId = fid || "none"; delete m.print.shopifyError; });
+  } catch (e) {
+    await updateMeta(env, ids[0], m => { m.print.shopifyError = String(e.message).slice(0, 300); });
+  }
 }
 
 // Runs from the cron. Makes PDFs for at most one book per run (the free plan has 10 browser minutes a day).
