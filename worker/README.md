@@ -111,5 +111,5 @@ reply-to. Delete them when settled: `DELETE /api/admin/problems/<draft>/<report>
 
 ## Email
 
-`MAIL_API_KEY` is a Zoho ZeptoMail (EU) Send Mail token. `BRANDS` in `wrangler.toml` gives each SKU prefix its name,
-website and hello@ address; each address's domain must be verified in ZeptoMail.
+`MAIL_API_KEY` is the API key of the Zoho CPaaS (formerly ZeptoMail, EU) agent, from the agent's SMTP/API tab; mail goes to `https://cpaas.zoho.eu/v1.1/email` (override with `MAIL_API_URL`). `BRANDS` in `wrangler.toml` gives each SKU prefix its name,
+website and hello@ address; each address's domain must be verified in Zoho CPaaS (familyboardbooks.com and familystorybooks.co.uk are, since 24 Nov 2026).

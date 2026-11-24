@@ -1,7 +1,7 @@
 // Emails our own service sends to customers (Shopify sends the order emails itself): reminders before a
-// customer's files are deleted, and problem reports to us. Sent through Zoho ZeptoMail's EU API.
+// customer's files are deleted, and problem reports to us. Sent through Zoho ZeptoMail's EU API (now part of Zoho CPaaS, cpaas.zoho.eu).
 //
-// Secret, set by David: MAIL_API_KEY (ZeptoMail "Send Mail" token). Each brand's sending address must be on a
+// Secret, set by David: MAIL_API_KEY (the agent's API key under SMTP/API; with or without the "Zoho-enczapikey" prefix). Each brand's sending address must be on a
 // domain verified in ZeptoMail. Without the key nothing is sent, and the clean-up never deletes a customer's
 // files without having sent its reminders.
 //
@@ -43,9 +43,10 @@ export async function sendMail(env, { brand, to, subject, html, replyTo, attachm
     subject, htmlbody: html
   };
   if (attachments && attachments.length) body.attachments = attachments;
-  const res = await fetch(env.MAIL_API_URL || "https://api.zeptomail.eu/v1.1/email", {
+  const key = env.MAIL_API_KEY.trim().replace(/^Zoho-enczapikey\s+/i, "");
+  const res = await fetch(env.MAIL_API_URL || "https://cpaas.zoho.eu/v1.1/email", {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json", Authorization: "Zoho-enczapikey " + env.MAIL_API_KEY.trim() },
+    headers: { "Content-Type": "application/json", Accept: "application/json", Authorization: "Zoho-enczapikey " + key },
     body: JSON.stringify(body)
   });
   if (!res.ok) throw new Error("Email " + res.status + ": " + (await res.text()).slice(0, 300));
