@@ -113,3 +113,4 @@ reply-to. Delete them when settled: `DELETE /api/admin/problems/<draft>/<report>
 
 `MAIL_API_KEY` is the API key of the Zoho CPaaS (formerly ZeptoMail, EU) agent, from the agent's SMTP/API tab; mail goes to `https://cpaas.zoho.eu/v1.1/email` (override with `MAIL_API_URL`). `BRANDS` in `wrangler.toml` gives each SKU prefix its name,
 website and hello@ address; each address's domain must be verified in Zoho CPaaS (familyboardbooks.com and familystorybooks.co.uk are, since 24 Nov 2026).
+To check email works, `POST /api/mail-test` (optionally `?brand=FST`) sends a sample "keep your files" reminder to that brand's own hello@ inbox, at most once every 10 minutes. It never sends anywhere else.

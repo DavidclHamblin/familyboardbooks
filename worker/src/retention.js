@@ -38,6 +38,37 @@ function randomKey() {
 
 function day(ms) { return new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }); }
 
+// The reminder's subject and body. n = 0, 1 or 2 (the last one says so).
+function reminderEmail(brand, what, when, n, keepUrl, pdf) {
+  const last = n === REMIND_BEFORE.length - 1;
+  const paras = [
+    "Hello,",
+    `We've kept the pictures and print files for ${what}, so you can order more copies whenever you like. We keep them for a year after your order is posted, and that year ends on <b>${day(when)}</b>.`,
+    "If you'd like us to keep them for another year, press the button below. It's free.",
+    pdf ? `Whatever you decide, here's a <a href="${pdf}">PDF copy of your book</a> to save and keep. The link stops working once the files are deleted.` : "",
+    last ? "This is our last reminder. If we don't hear from you, the files will be deleted for good on that date." : "If you don't need them, you don't have to do anything."
+  ].filter(Boolean);
+  return {
+    subject: last ? "Last reminder: your " + brand.name + " files will be deleted on " + day(when) : "Shall we keep your " + brand.name + " files for another year?",
+    html: letter(brand, paras, { label: "Keep them another year", url: keepUrl })
+  };
+}
+
+// A sample reminder sent to the brand's own hello@ inbox, so we can see what customers get and check email works.
+// Public but harmless: it only ever goes to our own inbox, at most once every 10 minutes.
+export async function sampleReminder(env, origin, brandCode) {
+  if (!mailReady(env)) return { ok: false, error: "Email is not set up (MAIL_API_KEY missing)." };
+  const last = await env.BUCKET.get("mailtest/last");
+  if (last && Date.now() - Number(await last.text()) < 10 * 60000) return { ok: false, error: "A sample was sent less than 10 minutes ago." };
+  await env.BUCKET.put("mailtest/last", String(Date.now()));
+  const brand = brandFor(env, brandCode || "FBB");
+  const mail = reminderEmail(brand, "your order #1001 (sample)", Date.now() + 30 * DAY, 0, origin + "/api/keep/sample/sample", null);
+  try {
+    await sendMail(env, { brand, to: brand.email, subject: "[Sample] " + mail.subject, html: mail.html });
+    return { ok: true, sentTo: brand.email };
+  } catch (e) { return { ok: false, error: e.message }; }
+}
+
 async function remind(env, meta, when, n, origin, brand, updateMeta) {
   let keepKey = meta.keepKey;
   if (!keepKey) { keepKey = randomKey(); await updateMeta(env, meta.id, m => { m.keepKey = m.keepKey || keepKey; }); }
@@ -45,18 +76,7 @@ async function remind(env, meta, when, n, origin, brand, updateMeta) {
   const pdf = meta.print && meta.print.pdfAt && meta.print.fileKey && await env.BUCKET.head("print/" + meta.id + "/interior.pdf")
     ? origin + "/api/print/files/" + meta.id + "/" + meta.print.fileKey + "/interior.pdf" : null;
   const what = meta.order ? "your order " + esc(meta.order) : "your order";
-  const paras = [
-    "Hello,",
-    `We've kept the pictures and print files for ${what}, so you can order more copies whenever you like. We keep them for a year after your order is posted, and that year ends on <b>${day(when)}</b>.`,
-    "If you'd like us to keep them for another year, press the button below. It's free.",
-    pdf ? `Whatever you decide, here's a <a href="${pdf}">PDF copy of your book</a> to save and keep. The link stops working once the files are deleted.` : "",
-    n === REMIND_BEFORE.length - 1 ? "This is our last reminder. If we don't hear from you, the files will be deleted for good on that date." : "If you don't need them, you don't have to do anything."
-  ].filter(Boolean);
-  await sendMail(env, {
-    brand, to: meta.email,
-    subject: n === REMIND_BEFORE.length - 1 ? "Last reminder: your " + brand.name + " files will be deleted on " + day(when) : "Shall we keep your " + brand.name + " files for another year?",
-    html: letter(brand, paras, { label: "Keep them another year", url: keepUrl })
-  });
+  await sendMail(env, Object.assign({ brand, to: meta.email }, reminderEmail(brand, what, when, n, keepUrl, pdf)));
 }
 
 // Runs inside the daily clean-up for each paid draft. Returns "deleted", "reminded" or null.

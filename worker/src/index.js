@@ -1,7 +1,7 @@
 import { STORIES, WHO, WHERE, characterPrompt, standinPrompt, villainPrompt, scenePrompt, setPrompt, posePrompt, PEOPLE_POSES, PET_POSES } from "./stories.js";
 import { PKG_RE, luluEnv, luluReady, printProducts, quote } from "./lulu.js";
 import { productFor, shippingFrom, enqueue, servePrintFile, runPrintQueue, testPdf } from "./printing.js";
-import { retention, keepPage, deleteAt } from "./retention.js";
+import { retention, keepPage, deleteAt, sampleReminder } from "./retention.js";
 import { report, cleanupProblems } from "./problems.js";
 import { shopifyReady } from "./shopify.js";
 import { mailReady } from "./mail.js";
@@ -403,6 +403,8 @@ async function handle(req, env) {
   const J = (d, s) => json(d, s, h), E = (s, msg) => err(s, msg, h);
 
   if (path === "/api/health") return J({ ok: true, engine: env.ENGINE || "mock", gemini: !!env.GEMINI_API_KEY, openai: !!env.OPENAI_API_KEY, shopify: !!env.SHOPIFY_WEBHOOK_SECRET, lulu: luluReady(env) ? luluEnv(env) : false, browser: !!env.BROWSER, images: !!env.IMAGES, shopifyAdmin: shopifyReady(env), mail: mailReady(env) });
+  // Sends a sample "keep your files" email to the brand's own hello@ inbox (never to anyone else). ?brand=FST etc.
+  if (path === "/api/mail-test" && req.method === "POST") return J(await sampleReminder(env, url.origin, (url.searchParams.get("brand") || "FBB").toUpperCase()));
 
   // Printer price check (Lulu): print cost, postage and VAT to the UK and Spain, and the cover size.
   // Orders nothing. Products come from PRINT_PRODUCTS; ?pkg= and ?pages= try another Lulu format, ?qty= prices
