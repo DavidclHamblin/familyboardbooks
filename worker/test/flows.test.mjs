@@ -175,3 +175,14 @@ console.log("all passed");
   }
   console.log("ok  mail key works with or without the Zoho-enczapikey prefix");
 }
+
+// Sample email: only ever to the brand's own inbox, at most once per 10 minutes.
+{
+  const n = calls.length;
+  let r = await api("/api/mail-test?brand=fst", { method: "POST" }); let j = await r.json();
+  assert.equal(j.ok, true); assert.equal(j.sentTo, "hello@familystorybooks.co.uk");
+  const sent = JSON.parse(calls.slice(n).find(c => c.url.includes("cpaas.zoho.eu/v1.1/email")).body);
+  assert.equal(sent.to[0].email_address.address, "hello@familystorybooks.co.uk"); assert.match(sent.subject, /^\[Sample\] Shall we keep your Family Storybooks files/);
+  r = await api("/api/mail-test", { method: "POST" }); j = await r.json(); assert.equal(j.ok, false);
+  console.log("ok  sample email goes only to the brand inbox, rate-limited");
+}
