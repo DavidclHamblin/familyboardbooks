@@ -18,7 +18,7 @@ import { productFor, shippingFrom, enqueue, servePrintFile, runPrintQueue, testP
    A daily cron deletes unpaid drafts, originals after printing, and cartoons 30 days after
    delivery unless the customer chose to keep them. */
 
-const SLOT_RE = /^(p\d{1,3}-\d{1,2}|cover-front|cover-back|c-[a-z]{2,12}|s\d{1,2})$/;
+const SLOT_RE = /^(p\d{1,3}-\d{1,2}|cover-front|cover-back|c-[a-z]{2,12}|s\d{1,2}|pose-[a-z]{2,12}-[a-z0-9]{2,12}-[a-z]{2,12})$/;
 const ID_RE = /^[a-z0-9]{20}$/;
 const STYLES = ["splash", "painted", "watercolour", "comic", "storybook"];
 const ENGINES = ["gemini", "openai"];
@@ -631,8 +631,18 @@ async function handle(req, env) {
     // s<n> draws scene n from the approved characters. Prompts come only from stories.js.
     // Without a photo: c-<role> with standin:true draws our own invented character for that part,
     // and c-villain draws the story's villain (never a family member).
-    const isScene = /^s\d/.test(slot), isChar = /^c-/.test(slot);
-    let story = null, noPhoto = isScene;
+    // Learn to Read: pose-<role>-<outfit>-<pose> draws the family's own drawn character (c-<role>) in a cut-out pose,
+    // the same way as our example family in sets/, so the layered pages can show the customer's family.
+    const isScene = /^s\d/.test(slot), isChar = /^c-/.test(slot), isPose = /^pose-/.test(slot);
+    let story = null, noPhoto = isScene || isPose, poseParts = null;
+    if (isPose) {
+      story = STORIES[body.story];
+      if (!story || story.brand !== "FLR") return E(400, "Unknown story.");
+      const [, role, outfit, pose] = slot.split("-"), isPet = role === "pet";
+      if (!story.roles[role] || !(isPet ? PET_POSES : PEOPLE_POSES)[pose] || !(outfit === "costume" || story.roles[role][outfit])) return E(400, "Unknown pose.");
+      if (body.who && !WHO.includes(body.who)) return E(400, "Unknown person.");
+      poseParts = { role, outfit, pose, isPet };
+    }
     if (isScene || isChar) {
       story = STORIES[body.story];
       if (!story) return E(400, "Unknown story.");
@@ -689,6 +699,12 @@ async function handle(req, env) {
       const size = meta.paid && !isArt ? (env.PRINT_IMAGE_SIZE || "4K") : null;
       try { out = await drawStory(env, refs, scenePrompt(body.story, slot.slice(1), !!villain), "16:9", size); }
       catch (e) { console.error("scene failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this scene. Please try again."); }
+    } else if (isPose) {
+      const { role, outfit, pose, isPet } = poseParts;
+      const ref = await loadImage(env, "toon/" + id + "/c-" + role + ".png");
+      if (!ref) { await release(false); return E(409, "Draw " + story.roles[role].name + " first."); }
+      try { out = await drawStory(env, [ref], posePrompt(body.story, role, outfit, pose, isPet, body.who), "3:4"); }
+      catch (e) { console.error("pose failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this one. Please try again."); }
     } else if (noPhoto) {
       const text = slot === "c-villain" ? villainPrompt(body.story) : standinPrompt(body.story, slot.slice(2));
       try { out = await drawStory(env, [], text, "3:4"); }
