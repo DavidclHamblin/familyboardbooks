@@ -706,14 +706,17 @@ async function handle(req, env) {
       try { out = await drawStory(env, [ref], posePrompt(body.story, role, outfit, pose, isPet, body.who), "3:4"); }
       catch (e) { console.error("pose failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this one. Please try again."); }
     } else if (noPhoto) {
-      const text = slot === "c-villain" ? villainPrompt(body.story) : standinPrompt(body.story, slot.slice(2));
-      try { out = await drawStory(env, [], text, "3:4"); }
+      // Learn to Read: our example family's drawing of this role shows the house style (sets/example/c-<role>).
+      const styleImg = slot !== "c-villain" && story.brand === "FLR" ? await loadImage(env, "sets/example/c-" + slot.slice(2) + ".png") : null;
+      const text = slot === "c-villain" ? villainPrompt(body.story) : standinPrompt(body.story, slot.slice(2), !!styleImg);
+      try { out = await drawStory(env, styleImg ? [styleImg] : [], text, "3:4"); }
       catch (e) { console.error("stand-in failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this one. Please try again."); }
     } else {
     const obj = await env.BUCKET.get("orig/" + id + "/" + slot);
     if (!obj) { await release(false); return E(404, "Upload the photo first."); }
     const photo = { bytes: await obj.arrayBuffer(), type: obj.httpMetadata?.contentType || "image/jpeg" };
-    try { out = isChar ? await drawStory(env, [photo], characterPrompt(body.story, slot.slice(2), body.who, body.where), "3:4") : await makeCartoon(env, photo, style); }
+    const styleImg = isChar && story.brand === "FLR" ? await loadImage(env, "sets/example/c-" + slot.slice(2) + ".png") : null;
+    try { out = isChar ? await drawStory(env, styleImg ? [photo, styleImg] : [photo], characterPrompt(body.story, slot.slice(2), body.who, body.where, !!styleImg), "3:4") : await makeCartoon(env, photo, style); }
     catch (e) { console.error("cartoon failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this one. Please try again, or try a different photo."); }
     }
     sizeDrawn = isScene ? (out.engine === "openai" ? "1K" : (out.size || "1K")) : null;

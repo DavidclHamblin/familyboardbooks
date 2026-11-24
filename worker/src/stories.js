@@ -163,13 +163,20 @@ export const STORIES = Object.assign({
 // Every character (from a photo, a stand-in or the villain) is drawn the same way, so they all match on the page.
 const POSE = "standing in a relaxed three-quarter view on a plain white background, the whole body in frame, filling most of the height of the picture";
 
-export function characterPrompt(story, role, who, where) {
+// styleRef: true when our own drawing of this role (Learn to Read's example family) is sent as IMAGE 2, so a family's
+// character is drawn in exactly the house style (outlines, flat colours, proportions) and sits with the rest of the art.
+const STYLE_REF = "IMAGE 2 is a character from our books. Use it ONLY for the drawing style: copy its clean dark ink outlines, flat cheerful colours with soft simple shading, " +
+  "its simplified cartoon proportions (head size, hands, feet), the way it draws eyes, noses, mouths and hair as simple shapes and lines, and its level of detail, " +
+  "so the new character looks drawn by the same illustrator for the same book. Never copy IMAGE 2's face, hair, skin tone, body or";
+const NOT_PHOTO = "It must be a flat illustration, not a painting of the photo: no photographic shading, no skin or fur texture, no realistic hair strands, no soft airbrushed gradients.";
+export function characterPrompt(story, role, who, where, styleRef) {
   const s = STORIES[story], r = s.roles[role];
   if (ANIMALS.includes(who)) {  // a family pet (Learn to Read books): no clothes, the pet's own look
     return "IMAGE 1 is a photo of the customer's pet. Draw ONLY the " + who + (where ? " " + where : "") + " from it as a full-body storybook animal character called " + r.name +
       ", in a relaxed three-quarter view on a plain white background, the whole body in frame, filling most of the picture. " +
       "LIKENESS IS THE MOST IMPORTANT THING: the family must recognise their own pet instantly. Copy from the photo, as closely as the style allows: the kind of animal and breed, " +
       "its size and build, the exact fur or feather colours and markings, the ear shape, eye colour, muzzle or face shape, tail and any collar. Keep it a real animal on its usual legs, not dressed and not standing like a person. " +
+      (styleRef ? STYLE_REF + " its kind of animal, breed, colours or markings: those all come from IMAGE 1. " + NOT_PHOTO + " " : "") +
       "Style: " + s.style + ". Draw only this one animal. No text or letters.";
   }
   const person = (who || "person") + (where ? " " + where : "");
@@ -177,14 +184,18 @@ export function characterPrompt(story, role, who, where) {
     "LIKENESS IS THE MOST IMPORTANT THING: their own family must recognise them instantly, as in a portrait painted by a skilled illustrator, not a generic storybook face. " +
     "Copy from the photo, as closely as the style allows: the face shape and proportions, the shape, size and spacing of the eyes, the eyebrows, nose, mouth and smile, " +
     "the ears, skin tone, freckles, dimples or moles, the hairline and the hair's exact colour, length, parting and texture, any glasses, beard or moustache, and their age and build. " +
-    "Keep the stylisation light on the face: do not make the eyes bigger, the nose smaller or the face younger or prettier than in the photo. Remove any sunglasses so the eyes show. " +
+    (styleRef
+      ? STYLE_REF + " clothes: the person comes from IMAGE 1. Keep them recognisable through the shapes (face shape, eyes, smile, hair, skin tone, age) rather than through realistic detail. " + NOT_PHOTO + " "
+      : "Keep the stylisation light on the face: do not make the eyes bigger, the nose smaller or the face younger or prettier than in the photo. ") +
+    "Remove any sunglasses so the eyes show. " +
     "Dress them in " + r.costume + ". Style: " + s.style + ". Draw only this one character. No text or letters.";
 }
 
 // Our own invented character for a part the family leaves without a photo (no customer image is used).
-export function standinPrompt(story, role) {
+export function standinPrompt(story, role, styleRef) {
   const s = STORIES[story], r = s.roles[role];
-  return "Draw a full-body storybook character called " + r.name + ": " + r.standin + ", " + POSE + ". " +
+  return (styleRef ? "IMAGE 1 is a character from our books. Draw a NEW, different person in exactly its drawing style (the same ink outlines, flat colours, proportions and level of detail), not the same face or hair. " : "") +
+    "Draw a full-body storybook character called " + r.name + ": " + r.standin + ", " + POSE + ". " +
     "Dress them in " + r.costume + ". Style: " + s.style + ". Draw only this one character. No text or letters.";
 }
 
