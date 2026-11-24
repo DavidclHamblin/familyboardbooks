@@ -27,7 +27,7 @@ const calls = [];
 let luluStatus = "IN_PRODUCTION";
 globalThis.fetch = async (url, init = {}) => {
   url = String(url); const body = init.body ? (typeof init.body === "string" ? init.body : init.body.toString()) : "";
-  calls.push({ url, body });
+  calls.push({ url, body, init });
   const J = (d, s = 200) => new Response(JSON.stringify(d), { status: s, headers: { "Content-Type": "application/json" } });
   if (url.includes("/admin/oauth/access_token")) return J({ access_token: "tok", expires_in: 86400 });
   if (url.includes("/graphql.json")) {
@@ -42,7 +42,7 @@ globalThis.fetch = async (url, init = {}) => {
   if (url.includes("lulu.com") && url.includes("/auth/")) return J({ access_token: "lt", expires_in: 3600 });
   if (url.includes("lulu.com") && url.includes("/print-jobs/") && init.method === "POST") return J({ id: 555, status: { name: "CREATED" } }, 201);
   if (url.includes("lulu.com") && url.includes("/print-jobs/555")) return J({ id: 555, status: { name: luluStatus }, line_items: [{ tracking_urls: luluStatus === "SHIPPED" ? ["https://track.example/1"] : [] }] });
-  if (url.includes("zeptomail")) return J({ data: [{ message: "OK" }] }, 201);
+  if (url.includes("cpaas.zoho.eu/v1.1/email")) return J({ data: [{ message: "OK" }] }, 201);
   throw new Error("unexpected fetch " + url);
 };
 
@@ -103,10 +103,10 @@ console.log("ok  shipped -> tracking added to Shopify once, queue done");
 // 4. Retention: nothing for 11 months; reminders at 30, 14 and 3 days before; then deletion.
 const realNow = Date.now; const t0 = meta.print.shippedAt;
 const runCleanup = async at => { Date.now = () => at; await worker.scheduled({ cron: "17 3 * * *" }, env, ctx); await ctx.p; Date.now = realNow; };
-const mails = () => calls.filter(c => c.url.includes("zeptomail")).length;
+const mails = () => calls.filter(c => c.url.includes("cpaas.zoho.eu/v1.1/email")).length;
 await runCleanup(t0 + 300 * DAY); assert.equal(mails(), 0);
 await runCleanup(t0 + 336 * DAY); assert.equal(mails(), 1);
-const first = JSON.parse(calls.filter(c => c.url.includes("zeptomail"))[0].body);
+const first = JSON.parse(calls.filter(c => c.url.includes("cpaas.zoho.eu/v1.1/email"))[0].body);
 assert.equal(first.from.address, "hello@familystorybooks.co.uk"); assert.equal(first.to[0].email_address.address, "parent@example.com");
 assert.match(first.htmlbody, /\/api\/keep\/aaaaaaaaaaaaaaaaaaaa\/[a-z0-9]{24}/); assert.match(first.htmlbody, /interior\.pdf/);
 await runCleanup(t0 + 337 * DAY); assert.equal(mails(), 1);
@@ -155,7 +155,7 @@ assert.ok(tokenOk, "draft token accepted");
   const before = mails();
   r = await post({ reason: "damaged", details: "The cover is bent", photos: [jpeg, jpeg] }); assert.equal(r.status, 201, await r.clone().text());
   const res = await r.json(); assert.ok(res.emailed);
-  const mail = JSON.parse(calls.filter(c => c.url.includes("zeptomail")).at(-1).body);
+  const mail = JSON.parse(calls.filter(c => c.url.includes("cpaas.zoho.eu/v1.1/email")).at(-1).body);
   assert.equal(mails(), before + 1); assert.equal(mail.to[0].email_address.address, "hello@familystorybooks.co.uk");
   assert.equal(mail.reply_to[0].address, "p@example.com"); assert.equal(mail.attachments.length, 2);
   assert.ok(await env.BUCKET.get("problems/" + id3 + "/" + res.id + "/1.jpg"));
@@ -164,3 +164,14 @@ assert.ok(tokenOk, "draft token accepted");
   console.log("ok  problem report: token checked, photos stored, brand inbox emailed with photos, admin delete");
 }
 console.log("all passed");
+
+// The API key may be pasted with or without Zoho's "Zoho-enczapikey" prefix.
+{
+  const { sendMail } = await import("../src/mail.js");
+  for (const k of ["abc123", "Zoho-enczapikey abc123", " Zoho-enczapikey  abc123 "]) {
+    const n = calls.length;
+    await sendMail({ MAIL_API_KEY: k }, { brand: { name: "B", email: "hello@example.com" }, to: "x@example.com", subject: "s", html: "h" });
+    assert.equal(calls[n].init.headers.Authorization, "Zoho-enczapikey abc123");
+  }
+  console.log("ok  mail key works with or without the Zoho-enczapikey prefix");
+}
