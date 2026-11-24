@@ -444,7 +444,7 @@
         '<p class="notice">' + (F.toons.enabled() ? "Your photos upload securely when you continue, then you\'ll go to our secure checkout to pay. After you order, you\'ll get a private link to see every page as a cartoon, ask for changes and approve your book before we print." : "Next you\'ll go to our secure checkout to pay. After you order, we\'ll email you a private link to upload your photos, then send you a cartoon proof of every page to approve before we print.") + "</p>" +
         '<form class="form" id="checkout" novalidate>' +
         '<label class="check"><input type="checkbox" id="r-ok" name="consent"><span>I have permission to use the photos of everyone in my book.</span></label>' +
-        '<label class="check"><input type="checkbox" id="r-keep" name="keepFiles"><span><strong>Keep my cartoons and print file in my account</strong> so I can reorder or make another book later. Optional. If you leave this unticked, we delete them 30 days after delivery. Your original photos are always deleted once your book is printed.</span></label>' +
+        '<label class="check"><input type="checkbox" id="r-keep" name="keepFiles"><span><strong>Keep my cartoons and print file for two years</strong> so I can reorder or make another book later. Optional. If you leave this unticked, we keep them for one year after posting. We always email you before deleting them. Your original photos are always deleted once your book is printed.</span></label>' +
         '<p class="form-msg" role="status"></p><div class="panel-nav"><button type="button" class="btn ghost" data-nav="-1">Back</button><button type="submit" class="btn red">Continue to secure checkout</button></div></form></section>';
     }
     return '<section class="panel"><h2>Reserve your book</h2>' +
@@ -452,7 +452,7 @@
       '<form class="form" id="reserve" novalidate><div class="row2"><div class="field"><label for="r-name">Your name</label><input type="text" id="r-name" name="name" autocomplete="name"></div>' +
       '<div class="field"><label for="r-email">Email</label><input type="email" id="r-email" name="email" autocomplete="email" placeholder="name@example.com" required></div></div>' +
       '<label class="check"><input type="checkbox" id="r-ok" name="consent"><span>I have permission to use the photos of everyone in my book.</span></label>' +
-      '<label class="check"><input type="checkbox" id="r-keep" name="keepFiles"><span><strong>Keep my cartoons and print file in my account</strong> so I can reorder or make another book later. Optional. If you leave this unticked, we delete them 30 days after delivery. Your original photos are always deleted once your book is printed.</span></label>' +
+      '<label class="check"><input type="checkbox" id="r-keep" name="keepFiles"><span><strong>Keep my cartoons and print file for two years</strong> so I can reorder or make another book later. Optional. If you leave this unticked, we keep them for one year after posting. We always email you before deleting them. Your original photos are always deleted once your book is printed.</span></label>' +
       '<p class="form-msg" role="status"></p><div class="panel-nav"><button type="button" class="btn ghost" data-nav="-1">Back</button><button type="submit" class="btn red">Reserve my ' + esc(b.short === "ABC" ? "ABC" : b.short.toLowerCase()) + " book</button></div></form></section>";
   }
 
@@ -613,7 +613,7 @@
     var payload = {
       form: "reservation", name: $("#r-name").value.trim(), email: email, book: b.name, edition: state.edition, style: state.style,
       language: state.bilingual ? state.language + " + " + state.language2 : state.language, giftbox: state.giftbox, copies: state.copies,
-      keepFiles: $("#r-keep").checked ? "yes, keep in account" : "no, delete 30 days after delivery",
+      keepFiles: $("#r-keep").checked ? "yes, keep two years" : "no, keep one year after posting",
       total: cur + pl.total, cover: coverTitle(), dedication: state.dedication,
       coverColour: coverColour(), frontCover: state.cover.frontPhoto ? "own photo" : "our illustration",
       backCover: state.cover.backMode === "photo" ? (state.cover.backPhoto ? "own photo" : "our illustration") : "pattern",

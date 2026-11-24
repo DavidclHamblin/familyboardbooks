@@ -100,7 +100,7 @@
     var pages = (st.pages || []).map(pageCard).join("");
     var approve = st.paid && !st.approved
       ? '<section class="panel"><h2>Approve your book</h2><form class="form" id="approve"><label class="check"><input type="checkbox" id="ap-ok"><span>I\'ve checked every page, including names and spelling. Print my book as shown.</span></label><p class="form-msg" role="status"></p><button type="submit" class="btn red"' + (done < total ? " disabled" : "") + ">Approve and print</button></form></section>" : "";
-    var del = '<section class="panel"><h2>Your photos</h2><p class="hint">Your original photos are deleted once your book is printed. Cartoons and the print file are deleted 30 days after delivery' + (st.keep ? ", but you asked us to keep them in your account for reorders." : ".") + "</p>" +
+    var del = '<section class="panel"><h2>Your photos</h2><p class="hint">Your original photos are deleted once your book is printed. Cartoons and the print file are kept for ' + (st.keep ? "two years" : "a year") + ' after your book is posted, so you can order more copies. We\u2019ll email you before we delete them.</p>' +
       '<button type="button" class="btn ghost btn-sm" data-delete>' + (confirmDelete ? "Yes, delete everything now" : "Delete my photos and cartoons now") + "</button>" + (confirmDelete ? ' <span class="hint">This can\'t be undone. If your book isn\'t printed yet, we\'ll need the photos again.</span>' : "") + "</section>";
     root.innerHTML = '<section class="panel"><p class="eyebrow">Your proof</p><h1>' + esc((st.cover && st.cover.title) || "Your book") + "</h1>" + head + "</section>" +
       '<div class="proof-grid">' + coverCard() + pages + "</div>" + approve + del;
