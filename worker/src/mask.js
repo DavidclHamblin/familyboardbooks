@@ -9,7 +9,7 @@
 
 import decodeJpeg from "./vendor/jpeg-decoder.cjs";
 import { STORIES } from "./stories.js";
-import { checkPrompt, judge } from "./swap.js";
+import { checkPrompt, judge, KEEP_FACE } from "./swap.js";
 
 const CHECK_ROUNDS = 3, RATIOS = { "1:1": 1, "2:3": 2 / 3, "3:2": 3 / 2, "3:4": 3 / 4, "4:3": 4 / 3, "4:5": 4 / 5, "5:4": 5 / 4, "9:16": 9 / 16, "16:9": 16 / 9 };
 const MASTER = "Repaint IMAGE 1 exactly as it is, at full quality: the same composition, characters, faces, setting, colours and painting style, and the same empty area for the words. Change nothing. No text or letters.";
@@ -24,12 +24,15 @@ export function boxPrompt(storyKey, cast) {
     "Reply with JSON only: {\"<key>\": [ymin, xmin, ymax, xmax]} with whole numbers from 0 to 1000, relative to the picture's height (y) and width (x).";
 }
 
-export function cropPrompt(storyKey, role) {
+// `ref`: this person as already painted on an earlier page of the same book, so their hair and face stay the same.
+export function cropPrompt(storyKey, role, ref) {
   const s = STORIES[storyKey], r = s.roles[role];
   return "IMAGE 1 is a close-up cut from a page of our children's picture book. It shows " + r.name + " (wearing " + wearing(r) + "). " +
-    "IMAGE 2 is a portrait of a real family member. Repaint IMAGE 1 so that " + r.name + " becomes the person in IMAGE 2: take from IMAGE 2 the face shape and features, " +
+    "IMAGE 2 is a portrait of a real family member. " +
+    (ref ? "IMAGE 3 shows the same person as we have already painted them on another page of this book: their hair (colour, length, curls or waves) and face must look the same as in IMAGE 3, so the book is consistent. " : "") +
+    "Repaint IMAGE 1 so that " + r.name + " becomes the person in IMAGE 2: take from IMAGE 2 the face shape and features, " +
     "eyes, eyebrows, nose, mouth and smile, skin tone, the hair's exact colour, length, texture and style, their age, and any glasses, beard or freckles. " +
-    "Keep their pose, position, size, expression and clothes exactly as in IMAGE 1, and paint them in IMAGE 1's own style (" + s.style + "), not IMAGE 2's finish. " +
+    "Keep their pose, position, size, expression and clothes exactly as in IMAGE 1. " + KEEP_FACE + " Paint them in IMAGE 1's own style (" + s.style + "), not IMAGE 2's finish. " +
     "Keep everything else in IMAGE 1 exactly as it is: the background, the edges of the picture and any other character who is partly in view must not change at all. " +
     "Ignore IMAGE 2's background, pose and anything they are holding. No text or letters.";
 }
@@ -85,16 +88,30 @@ export function feather(rgba, w, h, f, keep) {
   return rgba;
 }
 
-// Our example page at print size, painted once per scene and kept.
+const MASTER_CHECK = "IMAGE 1 should be an exact larger copy of IMAGE 2. Is it the same picture: the same composition, characters, faces and expressions, " +
+  "the same background, sky, colours and light, and the same empty area for the words? Tiny differences in fine detail are fine. Reply with JSON only: {\"same\":true,\"why\":\"a few words\"}";
+
+// Our example page at print size, painted once per scene, checked against our page, and kept. (v2: the first
+// masters weren't checked, and one changed the sky behind the words.) If no repaint matches, our page is simply
+// enlarged, which is softer but never different.
 async function master(env, deps, key, n) {
-  const k = "style/fst/" + key + "/s" + n + ".master.jpg";
+  const k = "style/fst/" + key + "/s" + n + ".master2.jpg";
   const o = await env.BUCKET.get(k);
   if (o) return new Uint8Array(await o.arrayBuffer());
   const example = await deps.storybookArt(env, key, "s" + n);
   if (!example) throw new Error("our example page s" + n + " is missing");
-  const drawn = await deps.drawStory(env, [example], MASTER, "16:9", env.PRINT_IMAGE_SIZE || "4K");
-  if (!/^[24]K$/.test(drawn.size || "") || drawn.engine === "openai") throw new Error("our example page came back too small");
-  const jpg = await out(env.IMAGES.input(stream(drawn.bytes)), "image/jpeg", 95);
+  let jpg = null, size = null;
+  for (let i = 0; i < 3 && !jpg; i++) {
+    const drawn = await deps.drawStory(env, [example], MASTER, "16:9", env.PRINT_IMAGE_SIZE || "4K");
+    if (!/^[24]K$/.test(drawn.size || "") || drawn.engine === "openai") throw new Error("our example page came back too small");
+    const try1 = await out(env.IMAGES.input(stream(drawn.bytes)), "image/jpeg", 95);
+    size = size || await env.IMAGES.info(stream(try1));
+    if (deps.touch) await deps.touch();
+    let same = false;
+    try { same = (await deps.checkPicture(env, [{ bytes: try1, type: "image/jpeg" }, example], MASTER_CHECK)).same === true; } catch (e) { same = false; }
+    if (same) jpg = try1;
+  }
+  if (!jpg) jpg = await out(env.IMAGES.input(stream(example.bytes)).transform({ width: size.width, height: size.height, fit: "cover" }), "image/jpeg", 95);
   await env.BUCKET.put(k, jpg, { httpMetadata: { contentType: "image/jpeg" } });
   return jpg;
 }
@@ -111,9 +128,12 @@ async function boxes(env, deps, key, n, cast, page) {
 }
 
 // Repaint one character's box on `page` (JPEG bytes) and blend it back. Returns the new page (JPEG bytes).
-async function repaintBox(env, deps, key, role, page, rect, W, H, portrait) {
-  const crop = await out(env.IMAGES.input(stream(page)).transform({ trim: { left: rect.left, top: rect.top, width: rect.width, height: rect.height } }), "image/jpeg", 95);
-  const drawn = await deps.drawStory(env, [{ bytes: crop, type: "image/jpeg" }, portrait], cropPrompt(key, role), rect.ratio, "2K");
+const cut = (env, page, rect) => out(env.IMAGES.input(stream(page)).transform({ trim: { left: rect.left, top: rect.top, width: rect.width, height: rect.height } }), "image/jpeg", 95);
+
+async function repaintBox(env, deps, key, role, page, rect, W, H, portrait, ref) {
+  const crop = await cut(env, page, rect);
+  const images = [{ bytes: crop, type: "image/jpeg" }, portrait].concat(ref ? [ref] : []);
+  const drawn = await deps.drawStory(env, images, cropPrompt(key, role, !!ref), rect.ratio, "2K");
   const fitted = await out(env.IMAGES.input(stream(drawn.bytes)).transform({ width: rect.width, height: rect.height, fit: "cover" }), "image/jpeg", 95);
   const img = decodeJpeg(fitted, { useTArray: true, formatAsRGBA: true, maxMemoryUsageInMB: 256 });
   if (img.width !== rect.width || img.height !== rect.height) throw new Error("repainted box came back " + img.width + "x" + img.height);
@@ -135,7 +155,13 @@ export async function paintMask(env, id, key, story, n, deps, note) {
     if (!p) throw new Error("character " + role + " missing");
     portraits[role] = p;
   }
-  let page = await master(env, deps, key, n); await touch();
+  // How each person already looks in this book (saved from the first page of theirs that passed the check).
+  const refs = {};
+  for (const role of cast) {
+    const o = await env.BUCKET.get("toon/" + id + "/ref-" + role + ".jpg");
+    if (o) refs[role] = { bytes: new Uint8Array(await o.arrayBuffer()), type: "image/jpeg" };
+  }
+  let page = await master(env, Object.assign({}, deps, { touch }), key, n); await touch();
   const { width: W, height: H } = await env.IMAGES.info(stream(page));
   const engines = new Set(["gemini"]), skipped = [];
   let check = { ok: true, rounds: 0, notes: "no family on this page" };
@@ -147,7 +173,7 @@ export async function paintMask(env, id, key, story, n, deps, note) {
     for (;;) {
       rounds++;
       for (const role of todo) {
-        const r = await repaintBox(env, deps, key, role, page, rects[role], W, H, portraits[role]);
+        const r = await repaintBox(env, deps, key, role, page, rects[role], W, H, portraits[role], refs[role]);
         page = r.page; engines.add(r.engine); skipped.push(...r.skipped); await touch();
       }
       try {
@@ -157,6 +183,8 @@ export async function paintMask(env, id, key, story, n, deps, note) {
       // Everyone the check didn't like is repainted again (a size problem can only come from the box: all of them).
       todo = check.fails.length ? cast.filter(r => check.fails.includes(r)) : cast.slice();
     }
+    if (check.ok) for (const role of cast) if (!refs[role])
+      await env.BUCKET.put("toon/" + id + "/ref-" + role + ".jpg", await cut(env, page, rects[role]), { httpMetadata: { contentType: "image/jpeg" } });
     check = Object.assign(check, { rounds, boxes: Object.fromEntries(cast.map(r => [r, rects[r]])) });
   }
   if (note) {

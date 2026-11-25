@@ -10,6 +10,9 @@ import { STORIES } from "./stories.js";
 
 const CHECK_ROUNDS = 3;
 
+// Said to the painter every time: it likes to make everyone smile, which spoils the scary and surprised pages.
+export const KEEP_FACE = "Their facial expression must stay exactly as in IMAGE 1: if they look worried, scared, surprised or sad there, they still do; never add a smile that isn't there.";
+
 // The costume as it looks in our example page, without what the character holds in that scene.
 function wearing(r) { return r.costume.replace(/,?\s*holding .*$/i, ""); }
 
@@ -19,7 +22,7 @@ export function swapPrompt(storyKey, role, others) {
     "Edit IMAGE 1 and change ONE character only: " + r.name + " (in IMAGE 1, the one wearing " + wearing(r) + ") must become the person in IMAGE 2. " +
     "Take from IMAGE 2 only who they are: the face shape and features, eyes, eyebrows, nose, mouth and smile, skin tone, the hair's exact colour, length, texture and style, " +
     "their age, and any glasses, beard or freckles. Everything else about that character stays exactly as in IMAGE 1: the pose, the action, where they are, " +
-    "how big they are in the picture, the expression and the clothes. Paint the change in IMAGE 1's own style, matching its outlines, brushwork, colours and light " +
+    "how big they are in the picture, the expression and the clothes. " + KEEP_FACE + " Paint the change in IMAGE 1's own style, matching its outlines, brushwork, colours and light " +
     "(" + s.style + "), never IMAGE 2's finish, so it does not look pasted in. Change nothing else: " + (others ? "every other character, " : "") +
     "the setting, props, composition, framing and the empty area for the words stay exactly as they are. " +
     "Ignore IMAGE 2's background, pose and anything they are holding. No text, letters or speech bubbles.";
@@ -38,13 +41,14 @@ export function checkPrompt(storyKey, cast) {
   const list = cast.map((role, i) => "\"" + role + "\" = " + s.roles[role].name + " (portrait: IMAGE " + (i + 3) + ")").join("; ");
   return "You are checking a personalised children's picture book before it is printed. IMAGE 1 is the finished page. IMAGE 2 is our original example page for the same scene, " +
     "painted with a DIFFERENT family. The images after that are portraits of this book's family: " + list + ". " +
-    "For each of these characters, find them in IMAGE 1 and answer three questions. " +
+    "For each of these characters, find them in IMAGE 1 and answer four questions. " +
     "family: is this clearly the person in their portrait (face, hair colour, length and texture, skin tone, age, glasses or beard), and NOT the person who plays that part in IMAGE 2? " +
     "Be strict: if the face or hair looks more like IMAGE 2's person than the portrait, family is false. " +
     "size: are they about the same size and in about the same place as that character in IMAGE 2? " +
     "style: are they painted in the same finish as the rest of IMAGE 1, not looking pasted in? " +
+    "expression: do they have the same expression as that character in IMAGE 2 (for example scared, surprised, worried or happy)? A smile where IMAGE 2 has fear or surprise is false. " +
     "Also check that nobody appears twice, nobody is missing and no extra person appears. " +
-    "Reply with JSON only, no other words: {\"characters\":{\"<key>\":{\"family\":true,\"size\":true,\"style\":true,\"why\":\"a few words\"}},\"people_ok\":true,\"why\":\"a few words\"}";
+    "Reply with JSON only, no other words: {\"characters\":{\"<key>\":{\"family\":true,\"size\":true,\"style\":true,\"expression\":true,\"why\":\"a few words\"}},\"people_ok\":true,\"why\":\"a few words\"}";
 }
 
 // The check's answer as: ok, the characters to paint again, whether to start again from our page, and a short note.
@@ -54,10 +58,10 @@ export function judge(answer, cast) {
   for (const role of cast) {
     const x = c[role];
     if (!x) { fails.push(role); notes.push(role + ": not found"); continue; }
-    if (x.family === false || x.style === false) fails.push(role);
+    if (x.family === false || x.style === false || x.expression === false) fails.push(role);
     if (x.size === false) restart = true;
-    if (x.family === false || x.style === false || x.size === false)
-      notes.push(role + ": " + [x.family === false && "not like the portrait", x.size === false && "wrong size", x.style === false && "looks pasted in"].filter(Boolean).join(", ") + (x.why ? " (" + String(x.why).slice(0, 80) + ")" : ""));
+    if (x.family === false || x.style === false || x.size === false || x.expression === false)
+      notes.push(role + ": " + [x.family === false && "not like the portrait", x.size === false && "wrong size", x.style === false && "looks pasted in", x.expression === false && "wrong expression"].filter(Boolean).join(", ") + (x.why ? " (" + String(x.why).slice(0, 80) + ")" : ""));
   }
   if (answer && answer.people_ok === false) notes.push("people: " + String(answer.why || "someone missing, twice or extra").slice(0, 80));
   return { ok: !fails.length && !restart, fails, restart: !!restart, notes: notes.join("; ") };
