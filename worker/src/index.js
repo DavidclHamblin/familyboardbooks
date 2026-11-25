@@ -5,6 +5,7 @@ import { retention, keepPage, deleteAt, sampleReminder } from "./retention.js";
 import { report, cleanupProblems } from "./problems.js";
 import { shopifyReady } from "./shopify.js";
 import { mailReady } from "./mail.js";
+import { startPainting, runPainting, requeue, PRINT_AFTER_DAYS, isCreditError, alertCredits } from "./painting.js";
 /* Family Board Books: photo storage and cartoon pipeline (Cloudflare Worker + R2, EU jurisdiction).
 
    Storage layout in the R2 bucket:
@@ -165,6 +166,9 @@ function publicStatus(meta) {
     printReady: Object.keys(meta.slots).filter(s => meta.slots[s].toon && /^[24]K$/.test(meta.slots[s].size || "")),
     freeLeft: meta.paid ? null : Math.max(0, freeSlots(meta) - busySlots(meta)),
     redosLeft: meta.paid ? null : Math.max(0, meta.freeGens - meta.gens),
+    // Server painting of a paid storybook (painting.js): when the pages were ready and when the book prints on its own.
+    paint: meta.paint ? { readyAt: meta.paint.readyAt || null, printOn: meta.paint.readyAt ? meta.paint.readyAt + PRINT_AFTER_DAYS * DAY : null,
+      stuck: !!meta.paint.stuckAt, autoApproved: !!meta.autoApproved } : null,
     print: meta.print ? { status: meta.print.status || (meta.print.pdfAt ? "PDF_READY" : "QUEUED"), tracking: meta.print.tracking || [] } : null
   };
 }
@@ -263,9 +267,13 @@ async function drawStory(env, images, text, aspect, size) {
   const first = ENGINES.includes(env.STORY_ENGINE) ? env.STORY_ENGINE : "gemini";
   const order = [first].concat(ENGINES.filter(e => e !== first)).filter(e => hasKey(env, e));
   let lastErr = new Error("No AI key set");
+  const skipped = [];
   for (const eng of order) {
-    try { return Object.assign(await (eng === "gemini" ? geminiImages : openaiImages)(env, images, text, aspect, size), { engine: eng }); }
-    catch (e) { lastErr = e; console.error("story engine failed", eng, e.message); }
+    try { return Object.assign(await (eng === "gemini" ? geminiImages : openaiImages)(env, images, text, aspect, size), { engine: eng, skipped }); }
+    catch (e) {
+      lastErr = e; skipped.push(eng + ": " + e.message); console.error("story engine failed", eng, e.message);
+      if (isCreditError(e.message)) await alertCredits(env, eng, e.message);
+    }
   }
   throw lastErr;
 }
@@ -405,6 +413,11 @@ async function onOrderPaid(env, order) {
       // Books that a printer posts keep the delivery address until the draft is deleted.
       if (productFor(env, meta)) { meta.ship = shippingFrom(order); meta.copies = Math.max(1, Math.min(20, copies || 1)); }
     });
+  }
+  // Paid storybooks are painted on our server and the customer is emailed when the pages are ready (painting.js).
+  for (const id of ids) {
+    const meta = ID_RE.test(id) && await getMeta(env, id);
+    if (meta && meta.paid && !meta.paint && productFor(env, meta) && /^fst-/.test(meta.book || "")) await startPainting(env, id, order, updateMeta);
   }
   // Several printed books of the same product in one order (a Learn to Read pack) are posted together:
   // each draft lists the others in meta.pack, and the print queue sends them to Lulu as one job.
@@ -584,7 +597,14 @@ async function handle(req, env) {
   if (auth.error) { Object.entries(h).forEach(([k, v]) => auth.error.headers.set(k, v)); return auth.error; }
   const meta = auth.meta;
 
-  if (rest === "" && m === "GET") return J(publicStatus(meta));
+  if (rest === "" && m === "GET") {
+    // A storybook paid before server painting existed joins the paint queue the first time its owner looks at it.
+    if (meta.paid && !meta.paint && !meta.approvedAt && /^fst-/.test(meta.book || "") && productFor(env, meta)) {
+      await updateMeta(env, id, mm => { if (mm.paint) return false; mm.paint = { queuedAt: Date.now() }; });
+      await requeue(env, id);
+    }
+    return J(publicStatus(meta));
+  }
 
   if (rest === "" && m === "PATCH") {
     const body = await req.json().catch(() => ({}));
@@ -849,6 +869,10 @@ export default {
   },
   async scheduled(event, env, ctx) {
     if (event.cron === "17 3 * * *") ctx.waitUntil(cleanup(env));
-    else ctx.waitUntil(runPrintQueue(env, updateMeta).then(notes => notes.length && console.log("print queue", notes.join(" | "))));
+    else {
+      ctx.waitUntil(runPrintQueue(env, updateMeta).then(notes => notes.length && console.log("print queue", notes.join(" | "))));
+      ctx.waitUntil(runPainting(env, { getMeta, updateMeta, loadImage, drawStory, styleImage, randomToken, randomId })
+        .then(notes => notes.length && console.log("painting", notes.join(" | "))).catch(e => console.error("painting failed", e.message)));
+    }
   }
 };
