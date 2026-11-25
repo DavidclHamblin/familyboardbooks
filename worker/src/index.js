@@ -5,6 +5,7 @@ import { retention, keepPage, deleteAt, sampleReminder } from "./retention.js";
 import { report, cleanupProblems } from "./problems.js";
 import { shopifyReady } from "./shopify.js";
 import { mailReady } from "./mail.js";
+import { adminRoute, indexPaid } from "./admin.js";
 import { startPainting, runPainting, requeue, reportIssue, redrawn, release as releaseHold, PRINT_AFTER_DAYS, isCreditError, alertCredits } from "./painting.js";
 /* Family Board Books: photo storage and cartoon pipeline (Cloudflare Worker + R2, EU jurisdiction).
 
@@ -152,7 +153,7 @@ async function deleteDraft(env, id) {
   await deletePrefix(env, "toon/" + id + "/");
   await deletePrefix(env, "print/" + id + "/");
   await deletePrefix(env, "problems/" + id + "/");
-  await env.BUCKET.delete(["meta/" + id + ".json", "print/queue/" + id]);
+  await env.BUCKET.delete(["meta/" + id + ".json", "print/queue/" + id, "paid/" + id, "paint/queue/" + id, "paint/wait/" + id]);
 }
 
 function publicStatus(meta) {
@@ -435,6 +436,7 @@ async function onOrderPaid(env, order) {
       if (productFor(env, meta)) { meta.ship = shippingFrom(order); meta.copies = Math.max(1, Math.min(20, copies || 1)); }
     });
   }
+  for (const id of ids) if (ID_RE.test(id) && (await getMeta(env, id))?.paid) await indexPaid(env, id);  // for the admin page
   // Paid storybooks are painted on our server and the customer is emailed when the pages are ready (painting.js).
   for (const id of ids) {
     const meta = ID_RE.test(id) && await getMeta(env, id);
@@ -458,6 +460,12 @@ async function handle(req, env) {
   const h = cors(env, req);
   if (m === "OPTIONS") return new Response(null, { status: 204, headers: h });
   const J = (d, s) => json(d, s, h), E = (s, msg) => err(s, msg, h);
+
+  // Our Family Presents admin page and its API (admin.js; ADMIN_TOKEN). Same-origin only: no CORS headers.
+  if (path === "/admin" || path.startsWith("/api/admin/books")) {
+    const r = await adminRoute(env, req, path, { getMeta, updateMeta, json, err, timingSafeEqual, drawStory, styleImage, sceneRefs, loadImage });
+    if (r) return r;
+  }
 
   if (path === "/api/health") return J({ ok: true, engine: env.ENGINE || "mock", gemini: !!env.GEMINI_API_KEY, openai: !!env.OPENAI_API_KEY, shopify: !!env.SHOPIFY_WEBHOOK_SECRET, lulu: luluReady(env) ? luluEnv(env) : false, browser: !!env.BROWSER, images: !!env.IMAGES, shopifyAdmin: shopifyReady(env), mail: mailReady(env) });
   // Sends a sample "keep your files" email to the brand's own hello@ inbox (never to anyone else). ?brand=FST etc.
