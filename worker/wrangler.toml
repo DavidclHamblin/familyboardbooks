@@ -14,9 +14,14 @@ bucket_name = "fbb-photos"
 jurisdiction = "eu"
 
 # Daily clean-up (03:17 UTC): unpaid previews, printed originals, delivered books.
-# Every 10 minutes: the print queue (make PDFs, send to Lulu, follow Lulu's status).
+# Every 10 minutes: the print queue (make PDFs, send to Lulu, follow Lulu's status) and painting of paid storybooks
+# (painting.js: every page at print size, "pages ready" email, reminders, printing on day 4 if not approved).
 [triggers]
 crons = ["17 3 * * *", "*/10 * * * *"]
+
+# Keep the worker's logs (errors such as an AI account running out of credit) so they can be looked at later.
+[observability]
+enabled = true
 
 # Cloudflare's built-in browser (Browser Run), which saves a book's print page as PDF.
 # The free plan allows 10 browser minutes a day; one book takes well under a minute.
