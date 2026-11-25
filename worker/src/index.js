@@ -8,6 +8,7 @@ import { mailReady } from "./mail.js";
 import { adminRoute, indexPaid } from "./admin.js";
 import { startPainting, runPainting, requeue, reportIssue, redrawn, release as releaseHold, storyOf, PRINT_AFTER_DAYS, isCreditError, alertCredits } from "./painting.js";
 import { paintSwap } from "./swap.js";
+import { paintMask } from "./mask.js";
 /* Family Board Books: photo storage and cartoon pipeline (Cloudflare Worker + R2, EU jurisdiction).
 
    Storage layout in the R2 bucket:
@@ -714,7 +715,7 @@ async function handle(req, env) {
     return J(publicStatus(await reportIssue(env, meta, body, updateMeta, httpErr)));
   }
 
-  // Our own test: a private copy of a paid storybook listed in TEST_DRAFTS, painted a new way ({ method: "swap" }).
+  // Our own test: a private copy of a paid storybook listed in TEST_DRAFTS, painted a new way ({ method: "swap" | "mask" }).
   // It gets the book's drawn characters (never the photos), no email address and no delivery address, and it can't
   // be approved, so it is never emailed or printed. It shows in the admin page as a test copy.
   if (rest === "/testcopy" && m === "POST") {
@@ -735,7 +736,7 @@ async function handle(req, env) {
       id: cid, tokenHash: await sha256(token), created: now, book: meta.book, style: meta.style, cover: meta.cover || null, pages: meta.pages || null,
       brandCode: meta.brandCode, consentAt: meta.consentAt, keep: false, paid: true, paidAt: now, test: true, testOf: id, order: "TEST",
       gens: 0, freeSlots: meta.freeSlots, freeGens: meta.freeGens, slots,
-      paint: Object.assign({ queuedAt: now, held: true, issues: { book: { note: "Test copy: never printed", at: now } } }, body.method === "swap" ? { method: "swap" } : {})
+      paint: Object.assign({ queuedAt: now, held: true, issues: { book: { note: "Test copy: never printed", at: now } } }, /^(swap|mask)$/.test(body.method || "") ? { method: body.method } : {})
     });
     await indexPaid(env, cid, now);
     await requeue(env, cid);
@@ -875,9 +876,9 @@ async function handle(req, env) {
       const size = meta.paid && !isArt ? (env.PRINT_IMAGE_SIZE || "4K") : null;
       const note = meta.paid ? cleanNote(body.note) : "";
       // A book painted the "swap" way (swap.js) is redrawn the same way, one family member at a time, with the check.
-      const swap = meta.paid && !isArt && (meta.paint || {}).method === "swap";
+      const method = meta.paid && !isArt ? (meta.paint || {}).method : null, swap = /^(swap|mask)$/.test(method || "");
       try {
-        if (swap) { const sw = await paintSwap(env, id, body.story, story, slot.slice(1), { drawStory, storybookArt, loadImage, checkPicture }, note); out = sw.out; swapCheck = sw.check; }
+        if (swap) { const sw = await (method === "mask" ? paintMask : paintSwap)(env, id, body.story, story, slot.slice(1), { drawStory, storybookArt, loadImage, checkPicture }, note); out = sw.out; swapCheck = sw.check; }
         else out = await drawStory(env, r.refs, scenePrompt(body.story, slot.slice(1), r.villain, { example: r.example, note }), "16:9", size);
       }
       catch (e) { console.error("scene failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this scene. Please try again."); }
