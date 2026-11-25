@@ -230,7 +230,9 @@ export function scenePrompt(story, n, villainRef, opts) {
     "the same composition and camera angle, the same setting, furniture and props, the same positions, poses and sizes of every character " +
     "(a child stays child-sized next to the house, the door and the furniture), the same empty area for the words, and exactly the same soft " +
     "gouache and watercolour painting style, gentle outlines, colours, light and finish. The ONLY change: each character in IMAGE 1 becomes the matching " +
-    "character from their own reference image below. Do not add, remove or move anything else. " : "";
+    "character from their own reference image below. Do not add, remove or move anything else. IMPORTANT: the people in IMAGE 1 are a different family. " +
+    "Copy only their pose, place and size; every face, hair, skin tone, age, beard or glasses and outfit must come from the character's own reference, never from IMAGE 1. " +
+    sc.cast.map((role, i) => "The " + s.roles[role].name + " in IMAGE 1 becomes the person in IMAGE " + (i + 2) + ", wearing " + wearing(role) + ".").join(" ") + " " : "";
   const note = o.note ? "The family asked for this change to the picture: \u201c" + o.note + "\u201d. Make that change if it fits a children's picture book, and keep everything else the same. " : "";
   return "Illustrate one wide double-page spread of a children's picture book. Scene: " + sc.desc + ". " + example +
     (refs.length ? "The other images provided are character reference sheets (" + refs.join("; ") + "). Every character in the scene must be the SAME character as in their reference, copied exactly: " +
