@@ -6,7 +6,8 @@ import { report, cleanupProblems } from "./problems.js";
 import { shopifyReady } from "./shopify.js";
 import { mailReady } from "./mail.js";
 import { adminRoute, indexPaid } from "./admin.js";
-import { startPainting, runPainting, requeue, reportIssue, redrawn, release as releaseHold, PRINT_AFTER_DAYS, isCreditError, alertCredits } from "./painting.js";
+import { startPainting, runPainting, requeue, reportIssue, redrawn, release as releaseHold, storyOf, PRINT_AFTER_DAYS, isCreditError, alertCredits } from "./painting.js";
+import { paintSwap } from "./swap.js";
 /* Family Board Books: photo storage and cartoon pipeline (Cloudflare Worker + R2, EU jurisdiction).
 
    Storage layout in the R2 bucket:
@@ -278,6 +279,40 @@ async function drawStory(env, images, text, aspect, size) {
   }
   throw lastErr;
 }
+// A quick look at pictures by an AI that answers in words (JSON), used to check a painted page (swap.js).
+// Pictures are sent as small copies. CHECK_MODEL picks the model; if it isn't there, the next one is tried.
+async function smallCopy(env, im) {
+  if (!env.IMAGES) return im;
+  try {
+    const res = (await env.IMAGES.input(new Blob([im.bytes]).stream()).transform({ width: 1024, fit: "scale-down" }).output({ format: "image/jpeg", quality: 85 })).response();
+    return { bytes: await res.arrayBuffer(), type: "image/jpeg" };
+  } catch (e) { console.error("small copy failed", e.message); return im; }
+}
+async function checkPicture(env, images, text) {
+  const small = [];
+  for (const im of images) small.push(await smallCopy(env, im));
+  const parts = small.map(r => ({ inline_data: { mime_type: r.type, data: b64(r.bytes) } })).concat([{ text }]);
+  const models = [env.CHECK_MODEL, "gemini-flash-latest", "gemini-2.5-flash"].filter(Boolean);
+  let lastErr = new Error("No check model");
+  for (const model of models) {
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent", {
+      method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+      body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { temperature: 0, responseMimeType: "application/json" } })
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      lastErr = new Error("Check " + model + " " + res.status + ": " + (j.error && j.error.message || "error"));
+      if (res.status === 404 || res.status === 400) continue;
+      throw lastErr;
+    }
+    const out = ((j.candidates || [])[0] || {}).content, words = ((out && out.parts) || []).map(p => p.text || "").join("");
+    const m = /\{[\s\S]*\}/.exec(words);
+    if (!m) throw new Error("Check " + model + " gave no answer");
+    return JSON.parse(m[0]);
+  }
+  throw lastErr;
+}
+
 // A set picture, readable by anyone (no family data in it). Cross-origin so pages can draw it on a canvas.
 async function serveSet(env, req, key, web) {
   const h = { "Access-Control-Allow-Origin": "*", "Cache-Control": "public, max-age=3600" };
@@ -463,7 +498,7 @@ async function handle(req, env) {
 
   // Our Family Presents admin page and its API (admin.js; ADMIN_TOKEN). Same-origin only: no CORS headers.
   if (path === "/admin" || path.startsWith("/api/admin/books")) {
-    const r = await adminRoute(env, req, path, { getMeta, updateMeta, json, err, timingSafeEqual, drawStory, styleImage, sceneRefs, loadImage });
+    const r = await adminRoute(env, req, path, { getMeta, updateMeta, json, err, timingSafeEqual, drawStory, styleImage, sceneRefs, storybookArt, checkPicture, loadImage });
     if (r) return r;
   }
 
@@ -657,6 +692,7 @@ async function handle(req, env) {
       if (coverJson) meta.cover = JSON.parse(coverJson);
       if (body.approve === true) {
         if (!meta.paid) throw httpErr(402, "Please complete your order first.");
+        if (meta.test) throw httpErr(409, "This is a test copy for us: it is never printed.");
         // A printed storybook needs every scene drawn at print size before it can be approved.
         const product = productFor(env, meta), story = product && STORIES[(meta.cover && meta.cover.story) || meta.book.slice(product.bookPrefix.length)];
         if (story && story.scenes && Object.keys(story.scenes).some(n => { const s = meta.slots["s" + n]; return !s || !s.toon || !/^[24]K$/.test(s.size || ""); }))
@@ -676,6 +712,34 @@ async function handle(req, env) {
   if (rest === "/issues" && m === "POST") {
     const body = await req.json().catch(() => ({}));
     return J(publicStatus(await reportIssue(env, meta, body, updateMeta, httpErr)));
+  }
+
+  // Our own test: a private copy of a paid storybook listed in TEST_DRAFTS, painted a new way ({ method: "swap" }).
+  // It gets the book's drawn characters (never the photos), no email address and no delivery address, and it can't
+  // be approved, so it is never emailed or printed. It shows in the admin page as a test copy.
+  if (rest === "/testcopy" && m === "POST") {
+    if (!(env.TEST_DRAFTS || "").split(",").map(x => x.trim()).includes(id)) return E(403, "Not allowed");
+    const s = storyOf(env, meta);
+    if (!meta.paid || !s) return E(400, "Only paid storybooks can be copied for a test.");
+    const body = await req.json().catch(() => ({}));
+    const token = randomToken(), cid = randomId(20), slots = {};
+    for (const [k, v] of Object.entries(meta.slots || {})) {
+      if (!k.startsWith("c-") || !v.toon) continue;
+      const obj = await env.BUCKET.get("toon/" + id + "/" + k + ".png");
+      if (!obj) continue;
+      await env.BUCKET.put("toon/" + cid + "/" + k + ".png", await obj.arrayBuffer(), { httpMetadata: { contentType: obj.httpMetadata?.contentType || "image/png" } });
+      slots[k] = { gens: 0, toon: true, style: v.style, engine: v.engine, standin: v.standin, copiedFrom: id };
+    }
+    const now = Date.now();
+    await putMeta(env, {
+      id: cid, tokenHash: await sha256(token), created: now, book: meta.book, style: meta.style, cover: meta.cover || null, pages: meta.pages || null,
+      brandCode: meta.brandCode, consentAt: meta.consentAt, keep: false, paid: true, paidAt: now, test: true, testOf: id, order: "TEST",
+      gens: 0, freeSlots: meta.freeSlots, freeGens: meta.freeGens, slots,
+      paint: Object.assign({ queuedAt: now, held: true, issues: { book: { note: "Test copy: never printed", at: now } } }, body.method === "swap" ? { method: "swap" } : {})
+    });
+    await indexPaid(env, cid, now);
+    await requeue(env, cid);
+    return J({ id: cid, token }, 201);
   }
 
   if (rest === "/problems" && m === "POST") {
@@ -796,11 +860,11 @@ async function handle(req, env) {
       style = STYLES.includes(body.style) ? body.style : m.style;
       m.gens = (m.gens || 0) + 1; s.pending = Date.now();
     });
-    let sizeDrawn = null;  // set below from the drawing (scenes only)
+    let sizeDrawn = null, swapCheck = null;  // set below from the drawing (scenes only)
     const release = ok => updateMeta(env, id, m => {
       const s = m.slots[slot]; if (!s) return false;
       delete s.pending;
-      if (ok) { s.toon = true; s.gens = (s.gens || 0) + 1; s.style = style; s.engine = ok; if (sizeDrawn) s.size = sizeDrawn; else delete s.size; } else m.gens = Math.max(0, (m.gens || 1) - 1);
+      if (ok) { s.toon = true; s.gens = (s.gens || 0) + 1; s.style = style; s.engine = ok; if (sizeDrawn) s.size = sizeDrawn; else delete s.size; if (swapCheck) s.check = swapCheck; else delete s.check; } else m.gens = Math.max(0, (m.gens || 1) - 1);
     });
     let out;
     if (isScene) {
@@ -810,7 +874,12 @@ async function handle(req, env) {
       // Paid books draw their scenes at print size; the free preview and our example art stay at screen size.
       const size = meta.paid && !isArt ? (env.PRINT_IMAGE_SIZE || "4K") : null;
       const note = meta.paid ? cleanNote(body.note) : "";
-      try { out = await drawStory(env, r.refs, scenePrompt(body.story, slot.slice(1), r.villain, { example: r.example, note }), "16:9", size); }
+      // A book painted the "swap" way (swap.js) is redrawn the same way, one family member at a time, with the check.
+      const swap = meta.paid && !isArt && (meta.paint || {}).method === "swap";
+      try {
+        if (swap) { const sw = await paintSwap(env, id, body.story, story, slot.slice(1), { drawStory, storybookArt, loadImage, checkPicture }, note); out = sw.out; swapCheck = sw.check; }
+        else out = await drawStory(env, r.refs, scenePrompt(body.story, slot.slice(1), r.villain, { example: r.example, note }), "16:9", size);
+      }
       catch (e) { console.error("scene failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this scene. Please try again."); }
     } else if (isPose) {
       const { role, outfit, pose, isPet } = poseParts;
@@ -912,7 +981,7 @@ export default {
     if (event.cron === "17 3 * * *") ctx.waitUntil(cleanup(env));
     else {
       ctx.waitUntil(runPrintQueue(env, updateMeta).then(notes => notes.length && console.log("print queue", notes.join(" | "))));
-      ctx.waitUntil(runPainting(env, { getMeta, updateMeta, loadImage, drawStory, styleImage, sceneRefs, randomToken, randomId })
+      ctx.waitUntil(runPainting(env, { getMeta, updateMeta, loadImage, drawStory, styleImage, sceneRefs, storybookArt, checkPicture, randomToken, randomId })
         .then(notes => notes.length && console.log("painting", notes.join(" | "))).catch(e => console.error("painting failed", e.message)));
     }
   }

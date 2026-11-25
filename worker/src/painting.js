@@ -13,11 +13,13 @@ import { STORIES, standinPrompt, villainPrompt, scenePrompt } from "./stories.js
 import { productFor, enqueue } from "./printing.js";
 import { brandFor, esc, letter, mailReady, sendMail } from "./mail.js";
 import { admin, shopifyReady } from "./shopify.js";
+import { paintSwap } from "./swap.js";
 
 const PAINT = "paint/queue/", WAIT = "paint/wait/";
 const DAY = 86400000;
 export const PRINT_AFTER_DAYS = 4;
 const PER_RUN = 8, AT_ONCE = 2, MAX_TRIES = 3, PENDING_MS = 5 * 60000;
+const SWAP_PER_RUN = 2;  // a "swap" page takes several drawings and a check: fewer per cron run
 
 export function storyOf(env, meta) {
   const product = productFor(env, meta);
@@ -33,7 +35,8 @@ export async function startPainting(env, id, order, updateMeta) {
   const link = line && (line.properties || []).find(a => a.name === "Your book link");
   await updateMeta(env, id, m => {
     if (link && /^https:\/\/[^\s"<>]+\/proof\.html\?d=[a-z0-9]{20}#[A-Za-z0-9_-]+$/.test(String(link.value))) m.proofUrl = String(link.value);
-    m.paint = m.paint || { queuedAt: Date.now() };
+    // PAINT_METHOD "swap" (swap.js) paints new books one family member at a time, with a check.
+    m.paint = m.paint || Object.assign({ queuedAt: Date.now() }, env.PAINT_METHOD === "swap" ? { method: "swap" } : {});
   });
   await env.BUCKET.put(PAINT + id, String(Date.now()));
 }
@@ -59,12 +62,16 @@ async function paintSlot(env, id, key, story, slot, deps, opts) {
     s.pending = Date.now(); mine = true;
   });
   if (!mine) return "busy";
-  let out = null, error = null;
+  let out = null, error = null, check = null;
   try {
     if (slot === "c-villain") out = await drawStory(env, [], villainPrompt(key), "3:4");
     else if (slot.startsWith("c-")) {
       const styleImg = await styleImage(env, story, key, slot.slice(2));
       out = await drawStory(env, styleImg ? [styleImg] : [], standinPrompt(key, slot.slice(2), styleImg && styleImg.style), "3:4");
+    } else if (deps.checkPicture && ((await deps.getMeta(env, id)).paint || {}).method === "swap") {
+      const touch = () => updateMeta(env, id, m => { const s = m.slots[slot]; if (!s || !s.pending) return false; s.pending = Date.now(); });
+      const r = await paintSwap(env, id, key, story, slot.slice(1), Object.assign({}, deps, { touch }), o.note);
+      out = r.out; check = r.check;
     } else {
       const r = await sceneRefs(env, id, story, key, slot.slice(1), false);
       if (r.missing) throw new Error("character " + r.missing + " missing");
@@ -87,6 +94,12 @@ async function paintSlot(env, id, key, story, slot, deps, opts) {
     if (out) {
       s.toon = true; s.gens = (s.gens || 0) + 1; s.style = m.style; s.engine = out.engine; s.standin = slot.startsWith("c-") || undefined;
       if (size) s.size = size; else delete s.size;
+      if (check) s.check = check; else delete s.check;
+      // A page that still failed the check after its tries: keep it, but hold the book for us to look at.
+      if (check && check.ok === false && !m.test) {
+        m.paint = m.paint || {}; m.paint.issues = m.paint.issues || {}; m.paint.held = true;
+        m.paint.issues[slot] = { note: "Automatic check: " + (check.notes || "failed"), at: Date.now(), auto: true };
+      }
       m.gens = (m.gens || 0) + 1;
       if (m.paint && m.paint.fails && !tooSmall) delete m.paint.fails[slot];
     }
@@ -213,7 +226,8 @@ export async function runPainting(env, deps) {
     const after = chars.length ? missing(await getMeta(env, id), s.story) : { chars, scenes };
     if (after.chars.length) continue;  // try again next run
     if (after.scenes.length) {
-      const batch = after.scenes.slice(0, budget); budget -= batch.length;
+      const swap = meta.paint && meta.paint.method === "swap";
+      const batch = after.scenes.slice(0, swap ? Math.min(budget, SWAP_PER_RUN) : budget); budget = swap ? 0 : budget - batch.length;
       const r = await pool(batch, AT_ONCE, slot => paintSlot(env, id, s.key, s.story, slot, deps));
       notes.push(id + ": scenes " + r.join(","));
       if (r.includes("nocredit")) { notes.push("stopped: out of credit"); break; }
@@ -222,6 +236,10 @@ export async function runPainting(env, deps) {
     if (!left.chars.length && !left.scenes.length) {
       await env.BUCKET.delete(obj.key);
       if (done.approvedAt) { notes.push(id + ": ready (already approved)"); continue; }
+      if (done.test) {  // our own test copy: no emails, no approval wait, never printed
+        await updateMeta(env, id, m => { m.paint = m.paint || {}; if (m.paint.readyAt) return false; m.paint.readyAt = Date.now(); });
+        notes.push(id + ": test copy ready"); continue;
+      }
       if (done.paint && done.paint.readyAt) { await env.BUCKET.put(WAIT + id, String(done.paint.readyAt)); notes.push(id + ": repainted"); continue; }  // a page redrawn after "ready": no new email
       const ready = await updateMeta(env, id, m => { m.paint = m.paint || {}; m.paint.readyAt = m.paint.readyAt || Date.now(); });
       await env.BUCKET.put(WAIT + id, String(ready.paint.readyAt));
