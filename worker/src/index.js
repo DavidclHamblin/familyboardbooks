@@ -5,7 +5,7 @@ import { retention, keepPage, deleteAt, sampleReminder } from "./retention.js";
 import { report, cleanupProblems } from "./problems.js";
 import { shopifyReady } from "./shopify.js";
 import { mailReady } from "./mail.js";
-import { startPainting, runPainting, requeue, PRINT_AFTER_DAYS, isCreditError, alertCredits } from "./painting.js";
+import { startPainting, runPainting, requeue, reportIssue, redrawn, release as releaseHold, PRINT_AFTER_DAYS, isCreditError, alertCredits } from "./painting.js";
 /* Family Board Books: photo storage and cartoon pipeline (Cloudflare Worker + R2, EU jurisdiction).
 
    Storage layout in the R2 bucket:
@@ -167,8 +167,8 @@ function publicStatus(meta) {
     freeLeft: meta.paid ? null : Math.max(0, freeSlots(meta) - busySlots(meta)),
     redosLeft: meta.paid ? null : Math.max(0, meta.freeGens - meta.gens),
     // Server painting of a paid storybook (painting.js): when the pages were ready and when the book prints on its own.
-    paint: meta.paint ? { readyAt: meta.paint.readyAt || null, printOn: meta.paint.readyAt ? meta.paint.readyAt + PRINT_AFTER_DAYS * DAY : null,
-      stuck: !!meta.paint.stuckAt, autoApproved: !!meta.autoApproved } : null,
+    paint: meta.paint ? { readyAt: meta.paint.readyAt || null, printOn: meta.paint.readyAt && !meta.paint.held ? meta.paint.readyAt + PRINT_AFTER_DAYS * DAY : null,
+      stuck: !!meta.paint.stuckAt, autoApproved: !!meta.autoApproved, held: !!meta.paint.held, issues: Object.keys(meta.paint.issues || {}) } : null,
     print: meta.print ? { status: meta.print.status || (meta.print.pdfAt ? "PDF_READY" : "QUEUED"), tracking: meta.print.tracking || [] } : null
   };
 }
@@ -306,19 +306,40 @@ async function styleImage(env, story, storyKey, role) {
   if (!story || !/^[a-z0-9-]+$/.test(storyKey + role)) return null;
   if (story.brand === "FLR") { const img = await loadImage(env, "sets/example/c-" + role + ".png"); return img && Object.assign(img, { style: "flat" }); }
   if (story.brand) return null;
-  const key = "style/fst/" + storyKey + "/" + role + ".webp";
-  let img = await loadImage(env, key);
-  if (!img) {
-    try {
-      const res = await fetch(STORYBOOK_ART + storyKey + "/" + role + ".webp");
-      if (!res.ok) return null;
-      const bytes = await res.arrayBuffer();
-      await env.BUCKET.put(key, bytes, { httpMetadata: { contentType: "image/webp" } });
-      img = { bytes, type: "image/webp" };
-    } catch (e) { console.error("style image failed", key, e.message); return null; }
-  }
-  return Object.assign(img, { style: "painted" });
+  const img = await storybookArt(env, storyKey, role);
+  return img && Object.assign(img, { style: "painted" });
 }
+// Our own finished artwork for a storybook (a character, or a page s<n>), from the website, kept in R2 for a week.
+async function storybookArt(env, storyKey, name) {
+  if (!/^[a-z0-9-]+$/.test(storyKey + name)) return null;
+  const key = "style/fst/" + storyKey + "/" + name + ".webp";
+  const o = await env.BUCKET.get(key);
+  if (o && Date.now() - Number((o.customMetadata || {}).at || 0) < 7 * 86400000) return { bytes: await o.arrayBuffer(), type: "image/webp" };
+  try {
+    const res = await fetch(STORYBOOK_ART + storyKey + "/" + name + ".webp");
+    if (!res.ok) return o ? { bytes: await o.arrayBuffer(), type: "image/webp" } : null;
+    const bytes = await res.arrayBuffer();
+    await env.BUCKET.put(key, bytes, { httpMetadata: { contentType: "image/webp" }, customMetadata: { at: String(Date.now()) } });
+    return { bytes, type: "image/webp" };
+  } catch (e) { console.error("storybook art failed", key, e.message); return o ? { bytes: await o.arrayBuffer(), type: "image/webp" } : null; }
+}
+// The pictures a storybook page is painted from: our finished example page first (layout, sizes, props and finish),
+// then each character in the scene and the villain. Our own example books (ART_DRAFTS) are painted without it.
+async function sceneRefs(env, id, story, storyKey, n, isArt) {
+  const sc = story.scenes[n], refs = [];
+  const example = !isArt && !story.brand ? await storybookArt(env, storyKey, "s" + n) : null;
+  if (example) refs.push(example);
+  for (const role of sc.cast) {
+    const img = await loadImage(env, "toon/" + id + "/c-" + role + ".png");
+    if (!img) return { missing: role };
+    refs.push(img);
+  }
+  const villain = sc.wolf ? await loadImage(env, "toon/" + id + "/c-villain.png") : null;
+  if (villain) refs.push(villain);
+  return { refs, example: !!example, villain: !!villain };
+}
+// A family's note on what to change in a page, kept short and plain before it goes into the painting instructions.
+function cleanNote(s) { return String(s || "").replace(/[\u0000-\u001f"<>{}\[\]`]/g, " ").replace(/\s+/g, " ").trim().slice(0, 200); }
 
 async function loadImage(env, key) {
   const o = await env.BUCKET.get(key);
@@ -513,6 +534,16 @@ async function handle(req, env) {
     return json({ ok: true, deleted: await deletePrefix(env, "problems/" + pd[1] + "/" + pd[2] + "/") });
   }
 
+  // Release a storybook held by a page report, once we've fixed it: its four days start again (ADMIN_TOKEN).
+  let rl = /^\/api\/admin\/drafts\/([a-z0-9]{20})\/release$/.exec(path);
+  if (rl && m === "POST") {
+    const a = /^Bearer (.+)$/.exec(req.headers.get("Authorization") || "");
+    if (!env.ADMIN_TOKEN || !a || !timingSafeEqual(a[1], env.ADMIN_TOKEN)) return err(403, "Not allowed");
+    if (!(await getMeta(env, rl[1]))) return err(404, "Not found");
+    const out = await releaseHold(env, rl[1], updateMeta);
+    return json({ ok: true, readyAt: out && out.paint && out.paint.readyAt });
+  }
+
   // Status changes from us or the printer integration: printed, delivered.
   let mm = /^\/api\/admin\/drafts\/([a-z0-9]+)\/status$/.exec(path);
   if (mm && m === "POST") {
@@ -633,6 +664,12 @@ async function handle(req, env) {
   if (rest === "" && m === "DELETE") { await deleteDraft(env, id); return J({ ok: true, deleted: true }); }
 
   // Report a problem with a paid order: { reason, details, photos: [base64 JPEG] } (problems.js).
+  // Something's wrong with a page before printing: { slot: "s<n>" | "book", note }. Holds the book (painting.js).
+  if (rest === "/issues" && m === "POST") {
+    const body = await req.json().catch(() => ({}));
+    return J(publicStatus(await reportIssue(env, meta, body, updateMeta, httpErr)));
+  }
+
   if (rest === "/problems" && m === "POST") {
     const body = await req.json().catch(() => ({}));
     return J(await report(env, meta, body, meta.brandCode || ((productFor(env, meta) || {}).brand) || "FBB", httpErr), 201);
@@ -759,18 +796,13 @@ async function handle(req, env) {
     });
     let out;
     if (isScene) {
-      const sc = story.scenes[slot.slice(1)], refs = [];
-      for (const role of sc.cast) {
-        const img = await loadImage(env, "toon/" + id + "/c-" + role + ".png");
-        if (!img) { await release(false); return E(409, "Draw " + story.roles[role].name + " first."); }
-        refs.push(img);
-      }
-      // The drawn villain (c-villain), when the book has one, keeps the Wolf the same on every page.
-      const villain = sc.wolf ? await loadImage(env, "toon/" + id + "/c-villain.png") : null;
-      if (villain) refs.push(villain);
+      // Our example page sets the layout and finish; the drawn villain (c-villain) keeps the Wolf the same on every page.
+      const r = await sceneRefs(env, id, story, body.story, slot.slice(1), isArt);
+      if (r.missing) { await release(false); return E(409, "Draw " + story.roles[r.missing].name + " first."); }
       // Paid books draw their scenes at print size; the free preview and our example art stay at screen size.
       const size = meta.paid && !isArt ? (env.PRINT_IMAGE_SIZE || "4K") : null;
-      try { out = await drawStory(env, refs, scenePrompt(body.story, slot.slice(1), !!villain), "16:9", size); }
+      const note = meta.paid ? cleanNote(body.note) : "";
+      try { out = await drawStory(env, r.refs, scenePrompt(body.story, slot.slice(1), r.villain, { example: r.example, note }), "16:9", size); }
       catch (e) { console.error("scene failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this scene. Please try again."); }
     } else if (isPose) {
       const { role, outfit, pose, isPet } = poseParts;
@@ -796,7 +828,8 @@ async function handle(req, env) {
     await env.BUCKET.put("toon/" + id + "/" + slot + ".png", out.bytes, { httpMetadata: { contentType: out.type } });
     await env.BUCKET.delete("toon/" + id + "/" + slot + ".web.webp");  // the old screen copy is out of date
     if (allowance && out.engine !== "mock") await allowance.record();
-    const fresh = await release(out.engine);
+    let fresh = await release(out.engine);
+    if (isScene && meta.paid && fresh.paint && fresh.paint.issues && fresh.paint.issues[slot] && /^[24]K$/.test(sizeDrawn || "")) fresh = await redrawn(env, id, slot, updateMeta);
     return J({ ok: true, slot, ...publicStatus(fresh) });
   }
 
@@ -871,7 +904,7 @@ export default {
     if (event.cron === "17 3 * * *") ctx.waitUntil(cleanup(env));
     else {
       ctx.waitUntil(runPrintQueue(env, updateMeta).then(notes => notes.length && console.log("print queue", notes.join(" | "))));
-      ctx.waitUntil(runPainting(env, { getMeta, updateMeta, loadImage, drawStory, styleImage, randomToken, randomId })
+      ctx.waitUntil(runPainting(env, { getMeta, updateMeta, loadImage, drawStory, styleImage, sceneRefs, randomToken, randomId })
         .then(notes => notes.length && console.log("painting", notes.join(" | "))).catch(e => console.error("painting failed", e.message)));
     }
   }
