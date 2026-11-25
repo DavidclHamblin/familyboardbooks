@@ -37,7 +37,7 @@ async function backfill(env) {
 function stage(env, m) {
   const s = storyOf(env, m), p = m.paint || {};
   if (m.print && m.print.status) return { key: "print", text: "Printer: " + m.print.status };
-  if (m.test) return { key: "held", text: "Test copy (never printed)" + (p.readyAt ? ": painted" : "") };
+  if (m.test) return { key: "held", text: "Test copy, " + (p.method || "old") + " method (never printed)" + (p.readyAt ? ": painted" : "") };
   if (m.approvedAt) return { key: "approved", text: m.autoApproved ? "Approved automatically" : "Approved by family" };
   if (!s) return { key: "paid", text: "Paid" };
   if (p.held) return { key: "held", text: "On hold: page reported" };
