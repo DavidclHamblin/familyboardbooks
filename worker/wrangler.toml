@@ -54,6 +54,8 @@ PRINT_IMAGE_SIZE = "4K"    # paid storybooks draw their scenes at this Gemini si
 FREE_DAILY_CAP = "150"     # free preview cartoons per day for the whole site (cost ceiling)
 FREE_IP_DAILY = "12"       # free preview cartoons per day from one internet connection
 ART_DRAFTS = "etsdm70z4pt280jwhd7s,ozad0a0u33idz9zkkcs8"  # our own example artwork (Storybooks example pages; Learn to Read sets): no free limits, still needs its secret token
+TEST_DRAFTS = "qaiwrpj78yo4nh4hscuj"  # paid books we may copy for a private test (POST /api/drafts/<id>/testcopy, with that book's own token); copies are never emailed or printed
+# PAINT_METHOD = "swap"   # paint new paid storybooks one family member at a time, with an automatic check (swap.js). Off until the test copies look right.
 
 # Printer: Lulu Print API, shared by every brand. "sandbox" = Lulu's test system (nothing printed or charged); "live" = real orders.
 LULU_ENV = "live"

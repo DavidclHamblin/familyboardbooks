@@ -113,7 +113,7 @@ async function packReady(env, meta) {
 // One step for one queued book. Returns a short note for the log.
 async function step(env, id, origin, updateMeta) {
   let meta = await (await env.BUCKET.get("meta/" + id + ".json"))?.json();
-  if (!meta || !meta.paid || !meta.approvedAt) { await env.BUCKET.delete(QUEUE + id); return id + ": dropped (gone, unpaid or not approved)"; }
+  if (!meta || !meta.paid || !meta.approvedAt || meta.test) { await env.BUCKET.delete(QUEUE + id); return id + ": dropped (gone, unpaid, not approved or a test copy)"; }
   const product = productFor(env, meta);
   if (!product) { await env.BUCKET.delete(QUEUE + id); return id + ": dropped (no print product)"; }
   const p = meta.print || {};
