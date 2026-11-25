@@ -48,12 +48,13 @@ function missing(meta, story) {
 }
 
 async function paintSlot(env, id, key, story, slot, deps) {
-  const { loadImage, drawStory, styleImage, updateMeta } = deps;
+  const { drawStory, styleImage, sceneRefs, updateMeta } = deps;
   let mine = false;
   await updateMeta(env, id, m => {
     mine = false;
     const s = m.slots[slot] = m.slots[slot] || { gens: 0 };
     if (s.pending && Date.now() - s.pending < PENDING_MS) return false;  // being drawn already (e.g. a redraw on the proof page)
+    if (s.toon && (slot.startsWith("c-") || /^[24]K$/.test(s.size || ""))) return false;  // finished meanwhile (the proof page drew it): never paint over it
     s.pending = Date.now(); mine = true;
   });
   if (!mine) return "busy";
@@ -64,15 +65,9 @@ async function paintSlot(env, id, key, story, slot, deps) {
       const styleImg = await styleImage(env, story, key, slot.slice(2));
       out = await drawStory(env, styleImg ? [styleImg] : [], standinPrompt(key, slot.slice(2), styleImg && styleImg.style), "3:4");
     } else {
-      const sc = story.scenes[slot.slice(1)], refs = [];
-      for (const role of sc.cast) {
-        const img = await loadImage(env, "toon/" + id + "/c-" + role + ".png");
-        if (!img) throw new Error("character " + role + " missing");
-        refs.push(img);
-      }
-      const villain = sc.wolf ? await loadImage(env, "toon/" + id + "/c-villain.png") : null;
-      if (villain) refs.push(villain);
-      out = await drawStory(env, refs, scenePrompt(key, slot.slice(1), !!villain), "16:9", env.PRINT_IMAGE_SIZE || "4K");
+      const r = await sceneRefs(env, id, story, key, slot.slice(1), false);
+      if (r.missing) throw new Error("character " + r.missing + " missing");
+      out = await drawStory(env, r.refs, scenePrompt(key, slot.slice(1), r.villain, { example: r.example }), "16:9", env.PRINT_IMAGE_SIZE || "4K");
     }
     await env.BUCKET.put("toon/" + id + "/" + slot + ".png", out.bytes, { httpMetadata: { contentType: out.type } });
     await env.BUCKET.delete("toon/" + id + "/" + slot + ".web.webp");
@@ -240,6 +235,7 @@ export async function runPainting(env, deps) {
   for (const obj of waiting.objects) {
     const id = obj.key.slice(WAIT.length), meta = await getMeta(env, id), s = meta && storyOf(env, meta);
     if (!meta || !s || meta.approvedAt || !(meta.paint && meta.paint.readyAt)) { await env.BUCKET.delete(obj.key); continue; }
+    if (meta.paint.held) continue;  // a page was reported: no reminders and no printing until it's fixed
     const days = Math.floor((now - meta.paint.readyAt) / DAY);
     const left = missing(meta, s.story);
     if (left.scenes.length || left.chars.length) {  // a redraw on the proof page came back too small to print: paint it again here
@@ -267,6 +263,52 @@ export async function runPainting(env, deps) {
     }
   }
   return notes;
+}
+
+// A family reports a problem with a page ({ slot: "s<n>" or "book", note }). The book is held: no reminders and no
+// day-4 printing until it's fixed, and the brand's hello@ address is told. Redrawing every reported page releases it.
+export async function reportIssue(env, meta, body, updateMeta, httpErr) {
+  const story = storyOf(env, meta);
+  if (!meta.paid || !story) throw httpErr(400, "This book can't take page reports.");
+  if (meta.approvedAt) throw httpErr(409, "Your book has already gone to print. Please use Report a problem in My orders.");
+  const slot = String(body.slot || ""), note = String(body.note || "").replace(/\s+/g, " ").trim().slice(0, 1000);
+  if (slot !== "book" && !(/^s\d{1,2}$/.test(slot) && story.story.scenes[slot.slice(1)])) throw httpErr(400, "Unknown page.");
+  if (note.length < 3) throw httpErr(400, "Please tell us what's wrong.");
+  const updated = await updateMeta(env, meta.id, m => {
+    m.paint = m.paint || {}; m.paint.issues = m.paint.issues || {};
+    if (Object.keys(m.paint.issues).length >= 20) return false;
+    m.paint.issues[slot] = { note, at: Date.now() }; m.paint.held = true;
+  });
+  const n = slot === "book" ? 0 : Number(slot.slice(1));
+  const where = n ? "Pages " + (2 + n * 2) + " and " + (3 + n * 2) + " (" + slot + ")" : "The whole book";
+  if (mailReady(env)) {
+    const brand = brandFor(env, meta.brandCode || "FST");
+    try {
+      await sendMail(env, { brand, to: brand.email, replyTo: meta.email || undefined, subject: "[Page problem] Storybook " + (meta.order || meta.id) + ": " + where,
+        html: letter(brand, ["A family has reported a problem with their storybook before it's printed. It is on hold: it won't print until the page is redrawn or the book is approved.",
+          "Order: " + esc(meta.order || "?") + "<br>Draft: " + esc(meta.id) + "<br>Story: " + esc(story.story.title) + "<br>Where: " + esc(where) + "<br>Their words: " + esc(note),
+          "Redraw the page from the family's proof page (the link is on the Shopify order as \u201cYour book link\u201d) with a note for the painter. Once every reported page is redrawn, the book's four days start again."]) });
+    } catch (e) { console.error("page report email failed", meta.id, e.message); }
+  }
+  return updated;
+}
+// After a page is redrawn: if it had been reported, clear it; with none left, release the hold and start the four days again.
+export async function redrawn(env, id, slot, updateMeta) {
+  return updateMeta(env, id, m => {
+    const issues = m.paint && m.paint.issues;
+    if (!issues || !issues[slot]) return false;
+    delete issues[slot];
+    if (Object.keys(issues).some(k => k !== "book")) return;
+    if (issues.book) return;  // a whole-book report is released by us (admin) or by approving
+    m.paint.held = false;
+    if (m.paint.readyAt) { m.paint.readyAt = Date.now(); m.paint.sent = 0; }
+  });
+}
+// Us (ADMIN_TOKEN): release a held book, starting its four days again from now.
+export async function release(env, id, updateMeta) {
+  const m = await updateMeta(env, id, mm => { if (!mm.paint) return false; mm.paint.issues = {}; mm.paint.held = false; if (mm.paint.readyAt) { mm.paint.readyAt = Date.now(); mm.paint.sent = 0; } });
+  if (m && m.paint && m.paint.readyAt && !m.approvedAt) await env.BUCKET.put(WAIT + id, String(m.paint.readyAt));
+  return m;
 }
 
 // Put a paid storybook back in the paint queue (after a stuck alert, or for books paid before this existed).

@@ -31,7 +31,7 @@ export const STORIES = Object.assign({
       3: { cast: ["hero"], text: "left", desc: "Little Red walks along a winding forest path between tall trees, birds singing and a squirrel waving its tail" },
       4: { cast: ["hero"], wolf: true, text: "left", desc: "Little Red walks on the forest path, not noticing that behind a mossy log the Wolf is peeking out with a far-too-wide grin" },
       5: { cast: ["hero"], wolf: true, text: "right", desc: "Little Red happily picks bluebells in a sunny glade while, far in the background, the Wolf sneaks off through the trees" },
-      6: { cast: ["grandma"], wolf: true, text: "right", desc: "outside a cosy cottage in the woods, the Wolf knocks on the front door; at a side window Grandma peeks out, holding a rolling pin, and spots his grey tail" },
+      6: { cast: ["grandma"], wolf: true, text: "right", desc: "outside a cosy cottage in the woods, the Wolf knocks on the front door; Grandma stays INSIDE the cottage and only peeks out through a side window, holding a rolling pin, and spots his grey tail" },
       7: { cast: [], wolf: true, text: "left", desc: "the Wolf lies in Grandma's bed wearing her frilly nightcap and round reading glasses, chuckling, the blanket pulled up to his chin" },
       8: { cast: ["hero"], wolf: true, text: "left", desc: "Little Red, holding a fistful of bluebells, stands beside Grandma's bed looking puzzled; in the bed the Wolf wears a frilly nightcap and round glasses, his big ears poking out, trying to look innocent" },
       9: { cast: ["hero"], wolf: true, text: "right", desc: "the Wolf, still in Grandma's frilly nightcap and round glasses, leaps out of the bed towards Little Red with his mouth wide open, arms outstretched and the blanket flying, while Little Red leans back in surprise; dramatic but funny, not frightening" },
@@ -217,21 +217,31 @@ export function villainPrompt(story) {
 }
 
 // villainRef: true when the drawn villain is sent as the last reference image.
-export function scenePrompt(story, n, villainRef) {
-  const s = STORIES[story], sc = s.scenes[n], ours = s.villainName || "the Wolf";
+// opts.example: IMAGE 1 is our own finished page of this scene (storybooks), which sets the layout, the size of everyone
+// in it, the props and the finish, so every family's book looks like our example book. opts.note: the family's own
+// words on what to change (a redraw from the proof page), already cleaned.
+export function scenePrompt(story, n, villainRef, opts) {
+  const s = STORIES[story], sc = s.scenes[n], ours = s.villainName || "the Wolf", o = opts || {}, first = o.example ? 2 : 1;
   const wearing = role => { const r = s.roles[role], alt = sc.wear && sc.wear[role]; return alt ? r[alt] : r.costume; };
-  const refs = sc.cast.map((role, i) => "IMAGE " + (i + 1) + " is " + s.roles[role].name + " (in this scene wearing " + wearing(role) + ")");
-  if (sc.wolf && villainRef) refs.push("IMAGE " + (sc.cast.length + 1) + " is " + ours);
+  const refs = sc.cast.map((role, i) => "IMAGE " + (i + first) + " is " + s.roles[role].name + " (in this scene wearing " + wearing(role) + ")");
+  if (sc.wolf && villainRef) refs.push("IMAGE " + (sc.cast.length + first) + " is " + ours);
   const changed = sc.cast.filter(role => sc.wear && sc.wear[role]).map(role => s.roles[role].name);
-  return "Illustrate one wide double-page spread of a children's picture book. Scene: " + sc.desc + ". " +
-    (refs.length ? "The images provided are character reference sheets (" + refs.join("; ") + "). Every character in the scene must be the SAME character as in their reference, copied exactly: " +
+  const example = o.example ? "IMAGE 1 is this exact page from our own finished book, painted for another family. Repaint IMAGE 1 as closely as you can: " +
+    "the same composition and camera angle, the same setting, furniture and props, the same positions, poses and sizes of every character " +
+    "(a child stays child-sized next to the house, the door and the furniture), the same empty area for the words, and exactly the same soft " +
+    "gouache and watercolour painting style, gentle outlines, colours, light and finish. The ONLY change: each character in IMAGE 1 becomes the matching " +
+    "character from their own reference image below. Do not add, remove or move anything else. " : "";
+  const note = o.note ? "The family asked for this change to the picture: \u201c" + o.note + "\u201d. Make that change if it fits a children's picture book, and keep everything else the same. " : "";
+  return "Illustrate one wide double-page spread of a children's picture book. Scene: " + sc.desc + ". " + example +
+    (refs.length ? "The other images provided are character reference sheets (" + refs.join("; ") + "). Every character in the scene must be the SAME character as in their reference, copied exactly: " +
       "the same face, hair colour and style, skin tone, age, glasses or beard, body shape" + (changed.length ? "" : ", and exactly the same clothes, patterns and colours") + ". " +
       (changed.length ? "Keep everyone's clothes exactly as in their reference, except that " + changed.join(" and ") + " now wears the outfit described above instead. " : "Do not change their outfit. ") +
-      "Do not change their hair or age, and do not invent a different-looking person. Each character appears only once. " : "") +
+      "Do not change their hair or age, and do not invent a different-looking person. Each character appears only once. " +
+      "Ignore anything a character is holding in their reference (a basket, flowers, food) and the reference's background and painting style: what they hold, and what is in it, comes from " + (o.example ? "IMAGE 1 and " : "") + "the scene, and the style from " + (o.example ? "IMAGE 1" : "the style below") + ". " : "") +
     (sc.wolf && !villainRef ? "Also include " + s.villain + ". " : sc.wolf ? "Our own characters look exactly like their reference: " + s.villain + ". Only include the ones the scene mentions. " : "") +
     (sc.others ? "Any other people in the scene are small, simple background figures, clearly different from the main characters. " : "Do not add any other people. ") +
     "LAYOUT: the words of the story will be printed over the " + sc.text + " third of the picture, so keep that third completely free of characters, faces and important objects: only calm background there (sky, wall, floor or grass). Place every character in the other two thirds. " +
-    "Style: " + s.style + ". No text, letters or speech bubbles.";
+    "Style: " + s.style + ". " + note + "No text, letters or speech bubbles.";
 }
 
 // ---------- Layered pictures (Learn to Read) ----------
