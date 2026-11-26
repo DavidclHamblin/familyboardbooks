@@ -65,7 +65,7 @@ function detail(env, m) {
     const x = (m.slots || {})["s" + n] || {};
     return { slot: "s" + n, pages: (2 + n * 2) + " and " + (3 + n * 2), drawn: !!x.toon, size: x.size || null, engine: x.engine || null,
       busy: !!(x.pending && Date.now() - x.pending < 5 * 60000), example: s.story.brand ? null : "https://www.familystorybooks.co.uk/assets/img/" + s.key + "/s" + n + ".webp",
-      report: (p.issues || {})["s" + n] || null, check: x.check ? { ok: x.check.ok, notes: x.check.notes || "", rounds: x.check.rounds || 0 } : null };
+      report: (p.issues || {})["s" + n] || null, check: x.check ? { ok: x.check.ok, notes: x.check.notes || "", rounds: x.check.rounds || 0, scores: x.check.scores || null, swap: !!x.check.swap, replicate: x.check.replicate || null } : null };
   }) : [];
   const chars = Object.keys(m.slots || {}).filter(k => k.startsWith("c-") && m.slots[k].toon).map(k => ({ slot: k, standin: !!m.slots[k].standin }));
   return Object.assign(summary(env, m), {
@@ -166,7 +166,7 @@ function drawBook(b){var mail="mailto:"+encodeURIComponent(b.email)+"?subject="+
   (b.bookReport?'<p class="report"><b>Report about the whole book:</b> '+esc(b.bookReport.note)+'</p>':"")+
   '<div class="grid">'+b.pages.map(function(p){return '<div class="page" data-slot="'+p.slot+'"><div class="bar" style="margin:0;justify-content:space-between"><b>Pages '+esc(p.pages)+'</b><span class="muted">'+esc((p.size||"not drawn")+(p.engine?" · "+p.engine:""))+(p.busy?" · painting now":"")+'</span></div>'+
     '<div class="pair"><img data-img="'+p.slot+'" alt="Their page"><img src="'+esc(p.example||"")+'" alt="Our example page"></div><div class="muted" style="font-size:12px">Left: their book · Right: our example</div>'+
-    (p.check?'<div class="muted" style="font-size:12px">Automatic check: '+(p.check.ok===true?"passed":p.check.ok===false?"<b>failed</b>":"not run")+(p.check.rounds?" after "+p.check.rounds+" tr"+(p.check.rounds>1?"ies":"y"):"")+(p.check.notes?" · "+esc(p.check.notes):"")+'</div>':"")+
+    (p.check?'<div class="muted" style="font-size:12px">Automatic check: '+(p.check.ok===true?"passed":p.check.ok===false?"<b>failed</b>":"not run")+(p.check.rounds?" after "+p.check.rounds+" tr"+(p.check.rounds>1?"ies":"y"):"")+(p.check.notes?" · "+esc(p.check.notes):"")+(p.check.swap?" · face swap":"")+(p.check.scores&&Object.keys(p.check.scores).length?" · likeness "+esc(Object.entries(p.check.scores).map(e=>e[0]+" "+e[1]).join(", ")):"")+(p.check.replicate&&p.check.replicate.length?" · "+esc(p.check.replicate.join("; ")):"")+'</div>':"")+
     (p.report?'<div class="report"><b>Family\\'s report ('+day(p.report.at)+'):</b> '+esc(p.report.note)+'</div>':"")+
     (b.approvedAt?"":'<textarea rows="2" maxlength="300" placeholder="Note for the painter (optional), e.g. Grandma should be inside" data-note="'+p.slot+'"></textarea><div><button data-repaint="'+p.slot+'">Paint this page again</button></div>')+'</div>'}).join("")+'</div>';
   app.innerHTML=h;document.getElementById("bk").onclick=function(){msg="";list()};

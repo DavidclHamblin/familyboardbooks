@@ -6,6 +6,7 @@ import { report, cleanupProblems } from "./problems.js";
 import { shopifyReady } from "./shopify.js";
 import { mailReady } from "./mail.js";
 import { adminRoute, indexPaid } from "./admin.js";
+import { replicateReady, inputsOf } from "./replicate.js";
 import { startPainting, runPainting, requeue, reportIssue, redrawn, release as releaseHold, storyOf, PRINT_AFTER_DAYS, isCreditError, alertCredits } from "./painting.js";
 import { paintSwap } from "./swap.js";
 import { paintMask } from "./mask.js";
@@ -723,7 +724,21 @@ async function handle(req, env) {
     const s = storyOf(env, meta);
     if (!meta.paid || !s) return E(400, "Only paid storybooks can be copied for a test.");
     const body = await req.json().catch(() => ({}));
+    // Face swap and likeness scoring (replicate.js): { swap: true, tries: 1-4 }. Only some pages: { only: [1, 2, 5] },
+    // and the rest are copied from the book as they are.
+    const extra = {};
+    if (body.swap) extra.swap = true;
+    if (Number(body.tries) > 1) extra.tries = Math.min(4, Math.floor(Number(body.tries)));
+    if ((extra.swap || extra.tries) && !replicateReady(env)) return E(400, "Face swap and scoring need REPLICATE_API_TOKEN.");
+    const only = Array.isArray(body.only) ? body.only.map(String).filter(n => s.story.scenes[n]) : null;
     const token = randomToken(), cid = randomId(20), slots = {};
+    if (only) for (const [k, v] of Object.entries(meta.slots || {})) {
+      if (!/^s\d+$/.test(k) || only.includes(k.slice(1)) || !v.toon) continue;
+      const obj = await env.BUCKET.get("toon/" + id + "/" + k + ".png");
+      if (!obj) continue;
+      await env.BUCKET.put("toon/" + cid + "/" + k + ".png", await obj.arrayBuffer(), { httpMetadata: { contentType: obj.httpMetadata?.contentType || "image/png" } });
+      slots[k] = { gens: 0, toon: true, style: v.style, engine: v.engine, size: v.size, copiedFrom: id };
+    }
     for (const [k, v] of Object.entries(meta.slots || {})) {
       if (!k.startsWith("c-") || !v.toon) continue;
       const obj = await env.BUCKET.get("toon/" + id + "/" + k + ".png");
@@ -736,11 +751,14 @@ async function handle(req, env) {
       id: cid, tokenHash: await sha256(token), created: now, book: meta.book, style: meta.style, cover: meta.cover || null, pages: meta.pages || null,
       brandCode: meta.brandCode, consentAt: meta.consentAt, keep: false, paid: true, paidAt: now, test: true, testOf: id, order: "TEST",
       gens: 0, freeSlots: meta.freeSlots, freeGens: meta.freeGens, slots,
-      paint: Object.assign({ queuedAt: now, held: true, issues: { book: { note: "Test copy: never printed", at: now } } }, /^(swap|mask)$/.test(body.method || "") ? { method: body.method } : {})
+      paint: Object.assign({ queuedAt: now, held: true, issues: { book: { note: "Test copy: never printed", at: now } } }, /^(swap|mask)$/.test(body.method || "") ? { method: body.method } : {}, (extra.swap || extra.tries) && body.method === "mask" ? extra : {})
     });
     await indexPaid(env, cid, now);
     await requeue(env, cid);
-    return J({ id: cid, token }, 201);
+    // The face-swap and face-match models' input fields, so we can see what replicate.js will send (no secrets).
+    let models = null;
+    if (extra.swap || extra.tries) try { models = { swap: await inputsOf(env, env.REPLICATE_SWAP_MODEL || "easel/advanced-face-swap"), match: await inputsOf(env, env.REPLICATE_MATCH_MODEL || "apna-mart/face-match") }; } catch (e) { models = { error: String(e.message || e).slice(0, 200) }; }
+    return J({ id: cid, token, models }, 201);
   }
 
   if (rest === "/problems" && m === "POST") {

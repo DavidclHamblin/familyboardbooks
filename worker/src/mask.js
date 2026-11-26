@@ -10,6 +10,7 @@
 import decodeJpeg from "./vendor/jpeg-decoder.cjs";
 import { STORIES } from "./stories.js";
 import { checkPrompt, judge, KEEP_FACE } from "./swap.js";
+import { replicateReady, faceSwap, faceMatch } from "./replicate.js";
 
 const CHECK_ROUNDS = 3, RATIOS = { "1:1": 1, "2:3": 2 / 3, "3:2": 3 / 2, "3:4": 3 / 4, "4:3": 4 / 3, "4:5": 4 / 5, "5:4": 5 / 4, "9:16": 9 / 16, "16:9": 16 / 9 };
 const MASTER = "Repaint IMAGE 1 exactly as it is, at full quality: the same composition, characters, faces, setting, colours and painting style, and the same empty area for the words. Change nothing. No text or letters.";
@@ -130,23 +131,47 @@ async function boxes(env, deps, key, n, cast, page) {
 // Repaint one character's box on `page` (JPEG bytes) and blend it back. Returns the new page (JPEG bytes).
 const cut = (env, page, rect) => out(env.IMAGES.input(stream(page)).transform({ trim: { left: rect.left, top: rect.top, width: rect.width, height: rect.height } }), "image/jpeg", 95);
 
-async function repaintBox(env, deps, key, role, page, rect, W, H, portrait, ref) {
+async function repaintBox(env, deps, key, role, page, rect, W, H, portrait, ref, opt) {
+  const o = opt || {}, tries = Math.max(1, Math.min(4, o.tries || 1));
   const crop = await cut(env, page, rect);
   const images = [{ bytes: crop, type: "image/jpeg" }, portrait].concat(ref ? [ref] : []);
-  const drawn = await deps.drawStory(env, images, cropPrompt(key, role, !!ref), rect.ratio, "2K");
-  const fitted = await out(env.IMAGES.input(stream(drawn.bytes)).transform({ width: rect.width, height: rect.height, fit: "cover" }), "image/jpeg", 95);
-  const img = decodeJpeg(fitted, { useTArray: true, formatAsRGBA: true, maxMemoryUsageInMB: 256 });
+  const fit = bytes => out(env.IMAGES.input(stream(bytes)).transform({ width: rect.width, height: rect.height, fit: "cover" }), "image/jpeg", 95);
+  let best = null, engine = "gemini";
+  const skipped = [], notes = [];
+  for (let t = 0; t < tries; t++) {
+    const drawn = await deps.drawStory(env, images, cropPrompt(key, role, !!ref), rect.ratio, "2K");
+    engine = drawn.engine; skipped.push(...(drawn.skipped || []));
+    let fitted = await fit(drawn.bytes);
+    // Option 2: the face and hair from their portrait, put on by a face-swap model, so they're the same on every page.
+    if (o.swap) {
+      try { fitted = await fit(await faceSwap(env, portrait, { bytes: fitted })); }
+      catch (e) { notes.push("swap failed: " + String(e.message || e).slice(0, 100)); }
+    }
+    if (deps.touch) await deps.touch();
+    // Option 3: several tries, keep the one whose face measures closest to the portrait.
+    let score = null;
+    if (tries > 1) {
+      try { const m = await faceMatch(env, portrait, { bytes: fitted }); score = m.score; if (score == null) notes.push("no score: " + m.raw); }
+      catch (e) { notes.push("score failed: " + String(e.message || e).slice(0, 100)); }
+    }
+    if (!best || (score ?? -1) > (best.score ?? -1)) best = { fitted, score };
+  }
+  const img = decodeJpeg(best.fitted, { useTArray: true, formatAsRGBA: true, maxMemoryUsageInMB: 256 });
   if (img.width !== rect.width || img.height !== rect.height) throw new Error("repainted box came back " + img.width + "x" + img.height);
   const f = Math.max(12, Math.round(Math.min(rect.width, rect.height) * 0.08));
   feather(img.data, img.width, img.height, f, { left: rect.left === 0, top: rect.top === 0, right: rect.left + rect.width >= W, bottom: rect.top + rect.height >= H });
   const patch = await encodePng(img.data, img.width, img.height);
   const next = await out(env.IMAGES.input(stream(page)).draw(env.IMAGES.input(stream(patch)), { left: rect.left, top: rect.top }), "image/jpeg", 95);
-  return { page: next, engine: drawn.engine, skipped: drawn.skipped || [] };
+  return { page: next, engine, skipped, score: best.score, notes };
 }
 
 // Paint scene n of a family's book. deps: drawStory, storybookArt, loadImage, checkPicture, touch.
+// deps.paintOpts (test copies): { swap: face swap after each repaint, tries: how many repaints to score and pick from }.
 export async function paintMask(env, id, key, story, n, deps, note) {
   if (!env.IMAGES) throw new Error("the mask method needs Cloudflare Images (binding IMAGES)");
+  const opt = Object.assign({}, deps.paintOpts || {});
+  if ((opt.swap || opt.tries > 1) && !replicateReady(env)) throw new Error("face swap and scoring need REPLICATE_API_TOKEN");
+  const rounds_max = opt.tries > 1 ? 1 : CHECK_ROUNDS;  // with scoring, the best of the tries is kept; the check only reports
   const sc = story.scenes[n], touch = deps.touch || (async () => {});
   const cast = sc.cast.slice().sort((a, b) => (a === "hero") - (b === "hero"));
   const portraits = {};
@@ -170,21 +195,25 @@ export async function paintMask(env, id, key, story, n, deps, note) {
     const rects = Object.fromEntries(cast.map(r => [r, rectFor(found[r], W, H)]));
     const example = await deps.storybookArt(env, key, "s" + n);
     let todo = cast.slice(), rounds = 0;
+    const scores = {}, rnotes = [];
     for (;;) {
       rounds++;
       for (const role of todo) {
-        const r = await repaintBox(env, deps, key, role, page, rects[role], W, H, portraits[role], refs[role]);
+        const r = await repaintBox(env, deps, key, role, page, rects[role], W, H, portraits[role], refs[role], opt);
         page = r.page; engines.add(r.engine); skipped.push(...r.skipped); await touch();
+        if (r.score != null) scores[role] = Math.round(r.score * 1000) / 1000;
+        rnotes.push(...r.notes.map(x => role + ": " + x));
       }
       try {
         check = judge(await deps.checkPicture(env, [{ bytes: page, type: "image/jpeg" }, example].concat(cast.map(r => portraits[r])), checkPrompt(key, cast)), cast);
       } catch (e) { check = { ok: null, notes: "check failed: " + String(e.message || e).slice(0, 120) }; break; }
-      if (check.ok || rounds >= CHECK_ROUNDS) break;
+      if (check.ok || rounds >= rounds_max) break;
       // Everyone the check didn't like is repainted again (a size problem can only come from the box: all of them).
       todo = check.fails.length ? cast.filter(r => check.fails.includes(r)) : cast.slice();
     }
     if (check.ok) for (const role of cast) if (!refs[role])
       await env.BUCKET.put("toon/" + id + "/ref-" + role + ".jpg", await cut(env, page, rects[role]), { httpMetadata: { contentType: "image/jpeg" } });
+    if (opt.swap || opt.tries > 1) check = Object.assign(check, { swap: !!opt.swap, tries: opt.tries || 1, scores, replicate: rnotes.slice(0, 6) });
     check = Object.assign(check, { rounds, boxes: Object.fromEntries(cast.map(r => [r, rects[r]])) });
   }
   if (note) {
