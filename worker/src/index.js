@@ -1,4 +1,4 @@
-import { STORIES, WHO, WHERE, characterPrompt, standinPrompt, villainPrompt, scenePrompt, setPrompt, posePrompt, PEOPLE_POSES, PET_POSES } from "./stories.js";
+import { STORIES, WHO, WHERE, WIDE_POSES, characterPrompt, standinPrompt, villainPrompt, scenePrompt, setPrompt, posePrompt, PEOPLE_POSES, PET_POSES } from "./stories.js";
 import { PKG_RE, luluEnv, luluReady, printProducts, quote } from "./lulu.js";
 import { productFor, shippingFrom, enqueue, servePrintFile, runPrintQueue, testPdf } from "./printing.js";
 import { retention, keepPage, deleteAt, sampleReminder } from "./retention.js";
@@ -639,6 +639,7 @@ async function handle(req, env) {
         const ref = await loadImage(env, "sets/example/c-" + role + ".png");
         if (!ref) return E(409, "Draw the character first.");
         refs = [ref]; text = posePrompt(body.story, role, outfit, pose, isPet, body.who);
+        if (WIDE_POSES.includes(pose)) aspect = "4:3";
       }
     }
     let out;
@@ -904,7 +905,7 @@ async function handle(req, env) {
       const { role, outfit, pose, isPet } = poseParts;
       const ref = await loadImage(env, "toon/" + id + "/c-" + role + ".png");
       if (!ref) { await release(false); return E(409, "Draw " + story.roles[role].name + " first."); }
-      try { out = await drawStory(env, [ref], posePrompt(body.story, role, outfit, pose, isPet, body.who), "3:4"); }
+      try { out = await drawStory(env, [ref], posePrompt(body.story, role, outfit, pose, isPet, body.who), WIDE_POSES.includes(pose) ? "4:3" : "3:4"); }
       catch (e) { console.error("pose failed", id, slot, e.message); await release(false); return E(502, "We couldn't draw this one. Please try again."); }
     } else if (noPhoto) {
       // Learn to Read: our example family's drawing of this role shows the house style (sets/example/c-<role>).
