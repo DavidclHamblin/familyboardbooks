@@ -362,7 +362,7 @@ export const READERS = {
     "costume": "a sunny yellow T-shirt, blue jeans and red trainers",
     "standin": "a cheerful five-year-old child with a round face, rosy cheeks and short curly brown hair",
     "outfit3": "cosy blue pyjamas with little stars and slippers",
-    "outfit4": "cosy blue pyjamas with little stars and slippers, holding a small lit torch in the pointing hand with a soft yellow beam shining up from it"
+    "outfit4": "cosy blue pyjamas with little stars and slippers, holding a small torch in the pointing hand, its lamp end glowing bright yellow (no beam of light is drawn)"
    },
    "adult": {
     "name": "the grown-up",
@@ -430,7 +430,7 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "It is the middle of the NIGHT: a dark navy-blue sky, moonlight, deep blue shadows and no daylight anywhere. A dark garden with a lawn, bushes and a big oak tree at the far right edge. A very big, bright, round full moon fills the upper middle of the sky, with stars around it. Moonlit grass in front",
+    "desc": "It is the middle of the NIGHT: a dark navy-blue sky, moonlight, deep blue shadows and no daylight anywhere. A dark garden with a lawn, bushes and a big oak tree at the far right edge. A very big, bright, round full moon high in the sky a little LEFT of the middle of the picture (about 40% of the way across from the left edge), with stars around it. Moonlit grass in front",
     "poses": {
      "adult": "hold",
      "child": "point",
@@ -447,7 +447,7 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "It is the middle of the NIGHT: a dark navy-blue sky, moonlight, deep blue shadows and no daylight anywhere. A big old oak tree with its trunk in the middle of the picture and its branches spreading over the top of the picture, against the dark starry sky. Moonlit grass. Nothing on the grass: no boots, bags, toys or torch",
+    "desc": "It is the middle of the NIGHT: a dark navy-blue sky, moonlight, deep blue shadows and no daylight anywhere. A big old oak tree with its trunk in the middle of the picture and its branches spreading over the top of the picture, against the dark starry sky. A soft pale-yellow torch beam shines diagonally up from the bottom-left corner into the branches. Moonlit grass. Nothing on the grass: no boots, bags, toys or torch",
     "poses": {
      "child": "point"
     },
@@ -493,7 +493,7 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "It is the middle of the NIGHT: a dark navy-blue sky, moonlight, deep blue shadows and no daylight anywhere. A big oak tree with a long branch across the top right. A round, fluffy brown owl with big kind eyes sits calmly on that branch, looking down. Dark starry sky, moonlit grass and dark bushes",
+    "desc": "It is the middle of the NIGHT: a dark navy-blue sky, moonlight, deep blue shadows and no daylight anywhere. A big oak tree at the far right edge with a long branch reaching across the top of the picture. A round, fluffy brown owl with big kind eyes sits calmly on that branch near the top right corner, looking down. The dark starry sky is one even colour all the way across. Moonlit grass and dark bushes",
     "poses": {
      "adult": "stand",
      "child": "stand",
