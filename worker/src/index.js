@@ -730,7 +730,9 @@ async function handle(req, env) {
     const extra = {};
     if (body.swap) extra.swap = true;
     if (Number(body.tries) > 1) extra.tries = Math.min(4, Math.floor(Number(body.tries)));
-    if ((extra.swap || extra.tries) && !replicateReady(env)) return E(400, "Face swap and scoring need REPLICATE_API_TOKEN.");
+    if (body.face) extra.face = true;  // a close-up of each face, painted once, used as the reference
+    if (body.painter === "kontext") extra.painter = "kontext";  // FLUX Kontext instead of Gemini for each box
+    if ((extra.swap || extra.tries || extra.painter) && !replicateReady(env)) return E(400, "Face swap, scoring and Kontext need REPLICATE_API_TOKEN.");
     const only = Array.isArray(body.only) ? body.only.map(String).filter(n => s.story.scenes[n]) : null;
     const token = randomToken(), cid = randomId(20), slots = {};
     if (only) for (const [k, v] of Object.entries(meta.slots || {})) {
@@ -752,13 +754,13 @@ async function handle(req, env) {
       id: cid, tokenHash: await sha256(token), created: now, book: meta.book, style: meta.style, cover: meta.cover || null, pages: meta.pages || null,
       brandCode: meta.brandCode, consentAt: meta.consentAt, keep: false, paid: true, paidAt: now, test: true, testOf: id, order: "TEST",
       gens: 0, freeSlots: meta.freeSlots, freeGens: meta.freeGens, slots,
-      paint: Object.assign({ queuedAt: now, held: true, issues: { book: { note: "Test copy: never printed", at: now } } }, /^(swap|mask)$/.test(body.method || "") ? { method: body.method } : {}, (extra.swap || extra.tries) && body.method === "mask" ? extra : {})
+      paint: Object.assign({ queuedAt: now, held: true, issues: { book: { note: "Test copy: never printed", at: now } } }, /^(swap|mask)$/.test(body.method || "") ? { method: body.method } : {}, Object.keys(extra).length && body.method === "mask" ? extra : {})
     });
     await indexPaid(env, cid, now);
     await requeue(env, cid);
     // The face-swap and face-match models' input fields, so we can see what replicate.js will send (no secrets).
     let models = null;
-    if (extra.swap || extra.tries) try { models = { swap: await inputsOf(env, env.REPLICATE_SWAP_MODEL || "easel/advanced-face-swap"), match: await inputsOf(env, env.REPLICATE_MATCH_MODEL || "apna-mart/face-match") }; } catch (e) { models = { error: String(e.message || e).slice(0, 200) }; }
+    if (extra.swap || extra.tries || extra.painter) try { models = { kontext: extra.painter ? await inputsOf(env, env.REPLICATE_KONTEXT_MODEL || "flux-kontext-apps/multi-image-kontext-pro") : undefined, swap: await inputsOf(env, env.REPLICATE_SWAP_MODEL || "easel/advanced-face-swap"), match: await inputsOf(env, env.REPLICATE_MATCH_MODEL || "apna-mart/face-match") }; } catch (e) { models = { error: String(e.message || e).slice(0, 200) }; }
     return J({ id: cid, token, models }, 201);
   }
 

@@ -72,7 +72,7 @@ async function paintSlot(env, id, key, story, slot, deps, opts) {
     } else if (deps.checkPicture && /^(swap|mask)$/.test(((await deps.getMeta(env, id)).paint || {}).method || "")) {
       const touch = () => updateMeta(env, id, m => { const s = m.slots[slot]; if (!s || !s.pending) return false; s.pending = Date.now(); });
       const pm = (await deps.getMeta(env, id)).paint, method = pm.method;
-      const paintOpts = { swap: !!pm.swap, tries: pm.tries || 1 };  // test copies only, for now (replicate.js)
+      const paintOpts = { swap: !!pm.swap, tries: pm.tries || 1, face: !!pm.face, painter: pm.painter || null };  // test copies only, for now (replicate.js)
       const r = await (method === "mask" ? paintMask : paintSwap)(env, id, key, story, slot.slice(1), Object.assign({}, deps, { touch, paintOpts }), o.note);
       out = r.out; check = r.check;
     } else {
@@ -230,7 +230,7 @@ export async function runPainting(env, deps) {
     if (after.chars.length) continue;  // try again next run
     if (after.scenes.length) {
       const swap = meta.paint && /^(swap|mask)$/.test(meta.paint.method || "");
-      const per = meta.paint.swap || meta.paint.tries > 1 ? 1 : SWAP_PER_RUN;  // face swap and scoring take longer
+      const per = meta.paint.swap || meta.paint.tries > 1 || meta.paint.painter ? 1 : SWAP_PER_RUN;  // face swap and scoring take longer
       const batch = after.scenes.slice(0, swap ? Math.min(budget, per) : budget); budget = swap ? 0 : budget - batch.length;
       const r = await pool(batch, AT_ONCE, slot => paintSlot(env, id, s.key, s.story, slot, deps));
       notes.push(id + ": scenes " + r.join(","));

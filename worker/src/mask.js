@@ -10,7 +10,7 @@
 import decodeJpeg from "./vendor/jpeg-decoder.cjs";
 import { STORIES } from "./stories.js";
 import { checkPrompt, judge, KEEP_FACE } from "./swap.js";
-import { replicateReady, faceSwap, faceMatch } from "./replicate.js";
+import { replicateReady, faceSwap, faceMatch, kontextPaint } from "./replicate.js";
 
 const CHECK_ROUNDS = 3, RATIOS = { "1:1": 1, "2:3": 2 / 3, "3:2": 3 / 2, "3:4": 3 / 4, "4:3": 4 / 3, "4:5": 4 / 5, "5:4": 5 / 4, "9:16": 9 / 16, "16:9": 16 / 9 };
 const MASTER = "Repaint IMAGE 1 exactly as it is, at full quality: the same composition, characters, faces, setting, colours and painting style, and the same empty area for the words. Change nothing. No text or letters.";
@@ -128,30 +128,61 @@ async function boxes(env, deps, key, n, cast, page) {
   return found;
 }
 
+// A close-up of the person's face, painted once per book from their portrait: their face is small in the full-length
+// portrait, so the painters and the face swap copy it better from this.
+export function facePrompt(storyKey) {
+  return "IMAGE 1 is a character from our children's picture book. Paint a close-up of this exact person: head and shoulders only, " +
+    "facing us at a slight three-quarter angle, with a gentle natural expression, filling most of the picture. Keep their face, features, skin tone, " +
+    "age, glasses or beard and the hair's exact colour, length, texture and style exactly as in IMAGE 1, in the same painting style (" + STORIES[storyKey].style + "). " +
+    "Plain soft cream background. No text or letters.";
+}
+async function closeUp(env, deps, id, key, role, portrait) {
+  const k = "toon/" + id + "/face-" + role + ".jpg";
+  const o = await env.BUCKET.get(k);
+  if (o) return { bytes: new Uint8Array(await o.arrayBuffer()), type: "image/jpeg" };
+  const drawn = await deps.drawStory(env, [portrait], facePrompt(key), "1:1", "2K");
+  const jpg = await out(env.IMAGES.input(stream(drawn.bytes)), "image/jpeg", 92);
+  await env.BUCKET.put(k, jpg, { httpMetadata: { contentType: "image/jpeg" } });
+  return { bytes: jpg, type: "image/jpeg" };
+}
+const kontextPrompt = (storyKey, role) => {
+  const s = STORIES[storyKey], r = s.roles[role];
+  return "The first image is a close-up from our children's picture book showing " + r.name + " (wearing " + wearing(r) + "). The second image is a close-up of a real family member's face. " +
+    "Change " + r.name + " so they become the person in the second image: their face, features, skin tone, age, glasses or beard, and the hair's exact colour, length, texture and style. " +
+    "Keep the pose, size, clothes, expression and everything else in the first image exactly the same, in the first image's painting style. " + KEEP_FACE + " No text.";
+};
+
 // Repaint one character's box on `page` (JPEG bytes) and blend it back. Returns the new page (JPEG bytes).
 const cut = (env, page, rect) => out(env.IMAGES.input(stream(page)).transform({ trim: { left: rect.left, top: rect.top, width: rect.width, height: rect.height } }), "image/jpeg", 95);
 
-async function repaintBox(env, deps, key, role, page, rect, W, H, portrait, ref, opt) {
+// `face`: their close-up (opt.face), used as an extra reference, as the face-swap source and for scoring.
+async function repaintBox(env, deps, key, role, page, rect, W, H, portrait, ref, opt, face) {
   const o = opt || {}, tries = Math.max(1, Math.min(4, o.tries || 1));
   const crop = await cut(env, page, rect);
   const images = [{ bytes: crop, type: "image/jpeg" }, portrait].concat(ref ? [ref] : []);
+  const source = face || portrait;
   const fit = bytes => out(env.IMAGES.input(stream(bytes)).transform({ width: rect.width, height: rect.height, fit: "cover" }), "image/jpeg", 95);
   let best = null, engine = "gemini";
   const skipped = [], notes = [];
   for (let t = 0; t < tries; t++) {
-    const drawn = await deps.drawStory(env, images, cropPrompt(key, role, !!ref), rect.ratio, "2K");
+    let drawn;
+    if (o.painter === "kontext") {
+      try { drawn = { bytes: await kontextPaint(env, [{ bytes: crop }, source], kontextPrompt(key, role)), engine: "kontext" }; }
+      catch (e) { notes.push("kontext failed: " + String(e.message || e).slice(0, 100)); }
+    }
+    if (!drawn) drawn = await deps.drawStory(env, face ? images.concat([face]) : images, cropPrompt(key, role, !!ref) + (face ? " The last image is a close-up of the same real person's face: copy their face from it." : ""), rect.ratio, "2K");
     engine = drawn.engine; skipped.push(...(drawn.skipped || []));
     let fitted = await fit(drawn.bytes);
     // Option 2: the face and hair from their portrait, put on by a face-swap model, so they're the same on every page.
     if (o.swap) {
-      try { fitted = await fit(await faceSwap(env, portrait, { bytes: fitted })); }
+      try { fitted = await fit(await faceSwap(env, source, { bytes: fitted })); }
       catch (e) { notes.push("swap failed: " + String(e.message || e).slice(0, 100)); }
     }
     if (deps.touch) await deps.touch();
     // Option 3: several tries, keep the one whose face measures closest to the portrait.
     let score = null;
     if (tries > 1) {
-      try { const m = await faceMatch(env, portrait, { bytes: fitted }); score = m.score; if (score == null) notes.push("no score: " + m.raw); }
+      try { const m = await faceMatch(env, source, { bytes: fitted }); score = m.score; if (score == null) notes.push("no score: " + m.raw); }
       catch (e) { notes.push("score failed: " + String(e.message || e).slice(0, 100)); }
     }
     if (!best || (score ?? -1) > (best.score ?? -1)) best = { fitted, score };
@@ -170,7 +201,7 @@ async function repaintBox(env, deps, key, role, page, rect, W, H, portrait, ref,
 export async function paintMask(env, id, key, story, n, deps, note) {
   if (!env.IMAGES) throw new Error("the mask method needs Cloudflare Images (binding IMAGES)");
   const opt = Object.assign({}, deps.paintOpts || {});
-  if ((opt.swap || opt.tries > 1) && !replicateReady(env)) throw new Error("face swap and scoring need REPLICATE_API_TOKEN");
+  if ((opt.swap || opt.tries > 1 || opt.painter === "kontext") && !replicateReady(env)) throw new Error("face swap, scoring and Kontext need REPLICATE_API_TOKEN");
   const rounds_max = opt.tries > 1 ? 1 : CHECK_ROUNDS;  // with scoring, the best of the tries is kept; the check only reports
   const sc = story.scenes[n], touch = deps.touch || (async () => {});
   const cast = sc.cast.slice().sort((a, b) => (a === "hero") - (b === "hero"));
@@ -199,7 +230,8 @@ export async function paintMask(env, id, key, story, n, deps, note) {
     for (;;) {
       rounds++;
       for (const role of todo) {
-        const r = await repaintBox(env, deps, key, role, page, rects[role], W, H, portraits[role], refs[role], opt);
+        const face = opt.face ? await closeUp(env, deps, id, key, role, portraits[role]) : null;
+        const r = await repaintBox(env, deps, key, role, page, rects[role], W, H, portraits[role], refs[role], opt, face);
         page = r.page; engines.add(r.engine); skipped.push(...r.skipped); await touch();
         if (r.score != null) scores[role] = Math.round(r.score * 1000) / 1000;
         rnotes.push(...r.notes.map(x => role + ": " + x));
@@ -213,7 +245,7 @@ export async function paintMask(env, id, key, story, n, deps, note) {
     }
     if (check.ok) for (const role of cast) if (!refs[role])
       await env.BUCKET.put("toon/" + id + "/ref-" + role + ".jpg", await cut(env, page, rects[role]), { httpMetadata: { contentType: "image/jpeg" } });
-    if (opt.swap || opt.tries > 1) check = Object.assign(check, { swap: !!opt.swap, tries: opt.tries || 1, scores, replicate: rnotes.slice(0, 6) });
+    if (opt.swap || opt.tries > 1 || opt.face || opt.painter) check = Object.assign(check, { face: !!opt.face, painter: opt.painter || "gemini", swap: !!opt.swap, tries: opt.tries || 1, scores, replicate: rnotes.slice(0, 6) });
     check = Object.assign(check, { rounds, boxes: Object.fromEntries(cast.map(r => [r, rects[r]])) });
   }
   if (note) {

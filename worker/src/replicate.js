@@ -115,6 +115,28 @@ export function readScore(out) {
   walk(typeof out === "string" ? (() => { try { return JSON.parse(out); } catch (e) { return null; } })() : out, 0);
   return best;
 }
+// FLUX Kontext as the painter of a box (REPLICATE_KONTEXT_MODEL, default flux-kontext-apps/multi-image-kontext-pro,
+// which takes two pictures: the box from our page, then the person's close-up face).
+const KONTEXT = "flux-kontext-apps/multi-image-kontext-pro";
+export async function kontextPaint(env, pictures, prompt) {
+  const model = env.REPLICATE_KONTEXT_MODEL || KONTEXT;
+  const { inputs } = await inputsOf(env, model);
+  const imgs = Object.keys(inputs).filter(k => /image/i.test(k) && (isImage(inputs[k]) || /_\d$|^input_image/.test(k))).sort();
+  if (!imgs.length) throw new Error("kontext: unexpected inputs (" + Object.keys(inputs).join(",") + ")");
+  const input = { prompt };
+  for (let i = 0; i < Math.min(imgs.length, pictures.length); i++) input[imgs[i]] = await dataUri(env, pictures[i], 1280);
+  const ar = find(inputs, /aspect/i);
+  if (ar && (inputs[ar].enum || []).includes("match_input_image")) input[ar] = "match_input_image";
+  const fmt = find(inputs, /output_format/i);
+  if (fmt && (inputs[fmt].enum || []).includes("jpg")) input[fmt] = "jpg";
+  const out = await run(env, model, input);
+  const url = Array.isArray(out) ? out[0] : out;
+  if (typeof url !== "string") throw new Error("kontext: no picture back");
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("kontext: picture download " + r.status);
+  return new Uint8Array(await r.arrayBuffer());
+}
+
 export async function faceMatch(env, a, b) {
   const { inputs } = await inputsOf(env, matchModel(env));
   const imgs = Object.keys(inputs).filter(k => /image/i.test(k)).sort();
