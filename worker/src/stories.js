@@ -258,8 +258,11 @@ export const PEOPLE_POSES = {
   cheer: "jumping for joy with both arms up in the air",
   hold: "holding both hands out in front at waist height, as if carrying or giving something small, looking down at their hands",
   crouch: "crouching down low on their heels, looking down at something on the ground in front of them",
-  sit: "sitting on the ground with legs crossed, side-on to us, facing right"
+  sit: "sitting on the ground with legs crossed, side-on to us, facing right",
+  // The bed is part of this cut-out, so a bedroom set is painted without one (and is drawn wide, 4:3).
+  bed: "sitting up in their own single wooden bed, tucked in up to the waist under a sky-blue duvet with little yellow moons and stars, leaning back on a big pillow, awake and smiling, the whole bed seen from the side and a little above, headboard on the left, short wooden legs on the floor"
 };
+export const WIDE_POSES = ["bed"];
 export const PET_POSES = {
   stand: "standing on all fours, side-on facing right, looking happy",
   sit: "sitting up, facing us, looking happy",
@@ -298,5 +301,6 @@ export function posePrompt(story, role, outfit, pose, isPet, who) {
     (extra ? "This time they are " + extra + ". " : wear ? "This time they are wearing " + wear + " instead of their usual clothes" + (person ? ", in the version that suits a " + person : "") + ". " : "") +
     (isPet ? "" : "Their arms, hands, legs and feet have the same skin tone as their face. ") +
     "Background: " + KEY_COLOUR + ". Do not use any magenta or purple on the character" + (isPet ? "" : " or their clothes") + ". The whole body is in frame with a clear gap of magenta all round it; nothing touches the edges. " +
-    "Style: " + s.style + ". Draw only this one character. No text or letters.";
+    (pose === "bed" ? "Draw the bed too: it is part of this cut-out and is the only object allowed. The whole bed is in frame. " : "") +
+    "Style: " + s.style + ". Draw only this one character" + (pose === "bed" ? " in their bed" : "") + ". No text or letters.";
 }
