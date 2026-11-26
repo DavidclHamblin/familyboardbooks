@@ -447,7 +447,7 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "It is the middle of the NIGHT: a dark navy-blue sky, moonlight, deep blue shadows and no daylight anywhere. A big old oak tree with its trunk in the middle of the picture and its branches spreading over the top of the picture, against the dark starry sky. A soft pale-yellow torch beam shines diagonally up from the bottom-left corner into the branches. Moonlit grass. Nothing on the grass: no boots, bags, toys or torch",
+    "desc": "It is the middle of the NIGHT: a dark navy-blue sky, moonlight, deep blue shadows and no daylight anywhere. A big old oak tree with its trunk in the middle of the picture and its branches spreading over the top of the picture, against the dark starry sky. A soft, pale-yellow cone of torchlight rises steeply from a point low on the left (a fifth of the way across and halfway up the picture) up into the branches, fading out; the torch itself is NOT in the picture. Moonlit grass. Nothing on the grass: no boots, bags, toys or torch. No writing, letters or words anywhere in the picture",
     "poses": {
      "child": "point"
     },
