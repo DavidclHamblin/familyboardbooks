@@ -361,12 +361,14 @@ export const READERS = {
     "name": "the child",
     "costume": "a sunny yellow T-shirt, blue jeans and red trainers",
     "standin": "a cheerful five-year-old child with a round face, rosy cheeks and short curly brown hair",
-    "outfit3": "cosy blue pyjamas with little stars and slippers"
+    "outfit3": "cosy blue pyjamas with little stars and slippers",
+    "outfit4": "cosy blue pyjamas with little stars and slippers, holding a small lit torch in the pointing hand with a soft yellow beam shining up from it"
    },
    "adult": {
     "name": "the grown-up",
     "costume": "a green jumper, dark trousers and comfortable brown shoes",
-    "standin": "a friendly, smiling grown-up in their thirties with short dark hair"
+    "standin": "a friendly, smiling grown-up in their thirties with short dark hair",
+    "outfit3": "+holding a small lit torch in one hand, a short soft yellow beam shining from it"
    },
    "pet": {
     "name": "the pet",
@@ -381,9 +383,9 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child in bed at night, eyes open, moonlight through the curtains",
+    "desc": "It is the middle of the NIGHT: a dark navy-blue sky, moonlight, deep blue shadows and no daylight anywhere. A cosy child's bedroom with the lamp off, lit only by moonlight. A window with open curtains on the right side of the picture shows the dark night sky, a moon and stars. A rug, a bedside table and a shelf of teddies. There is NO bed in the room: leave a clear stretch of empty floor across the left half of the picture",
     "poses": {
-     "child": "stand"
+     "child": "bed"
     },
     "wear": {
      "child": "outfit3"
@@ -395,7 +397,7 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the child climbs out of bed in pyjamas and tiptoes to the window",
+    "desc": "It is the middle of the NIGHT: a dark navy-blue sky, moonlight, deep blue shadows and no daylight anywhere. The same cosy child's bedroom by moonlight. A big window with the curtains pulled open fills the right third of the picture, showing the dark night sky, a moon, stars and the black shapes of trees. An empty bed with the covers thrown back stands against the far wall in the middle. Bare wooden floor in front",
     "poses": {
      "child": "stand"
     },
@@ -410,22 +412,33 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the grown-up holds a torch; the child and the grown-up step quietly into the dark garden",
+    "desc": "It is the middle of the NIGHT: a dark navy-blue sky, moonlight, deep blue shadows and no daylight anywhere. A back garden just outside the back door: a stone path, flower beds and bushes in dark blues and greens, the house's lit kitchen window glowing warm yellow, a big moon and stars in the dark sky",
     "poses": {
      "adult": "hold",
      "child": "stand"
     },
     "wear": {
-     "child": "outfit3"
+     "child": "outfit3",
+     "adult": "outfit3"
     }
    },
    "4": {
-    "cast": [],
+    "cast": [
+     "adult",
+     "child",
+     "pet"
+    ],
     "text": "left",
     "others": false,
-    "desc": "A big full moon over a dark garden full of shadows and a large oak tree",
+    "desc": "It is the middle of the NIGHT: a dark navy-blue sky, moonlight, deep blue shadows and no daylight anywhere. A dark garden with a lawn, bushes and a big oak tree at the far right edge. A very big, bright, round full moon fills the upper middle of the sky, with stars around it. Moonlit grass in front",
+    "poses": {
+     "adult": "hold",
+     "child": "point",
+     "pet": "stand"
+    },
     "wear": {
-     "child": "outfit3"
+     "child": "outfit3",
+     "adult": "outfit3"
     }
    },
    "5": {
@@ -434,12 +447,12 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the child looks up into the branches of the big oak, the torch beam pointing up",
+    "desc": "It is the middle of the NIGHT: a dark navy-blue sky, moonlight, deep blue shadows and no daylight anywhere. A big old oak tree with its trunk in the middle of the picture and its branches spreading over the top of the picture, against the dark starry sky. Moonlit grass. Nothing on the grass: no boots, bags, toys or torch",
     "poses": {
      "child": "point"
     },
     "wear": {
-     "child": "outfit3"
+     "child": "outfit4"
     }
    },
    "6": {
@@ -448,7 +461,7 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "A round fluffy owl with big eyes sits on a branch, looking down kindly at the child",
+    "desc": "It is the middle of the NIGHT: a dark navy-blue sky, moonlight, deep blue shadows and no daylight anywhere. A big oak tree on the right with a low branch reaching across. A round, fluffy brown owl with big kind eyes sits on that branch, looking down. Dark starry sky and moonlit grass",
     "poses": {
      "child": "stand"
     },
@@ -463,9 +476,9 @@ export const READERS = {
     ],
     "text": "right",
     "others": false,
-    "desc": "the pet looks up at the owl, mouth open; the child holds a finger to lips",
+    "desc": "It is the middle of the NIGHT: a dark navy-blue sky, moonlight, deep blue shadows and no daylight anywhere. A big oak tree on the left with a branch reaching across the top. A round, fluffy brown owl with big kind eyes sits on that branch, looking down. Dark starry sky and moonlit grass",
     "poses": {
-     "child": "hold",
+     "child": "stand",
      "pet": "stand"
     },
     "wear": {
@@ -480,24 +493,22 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "The owl stays calmly on its branch; the child, the grown-up and the pet gaze up at it",
+    "desc": "It is the middle of the NIGHT: a dark navy-blue sky, moonlight, deep blue shadows and no daylight anywhere. A big oak tree with a long branch across the top right. A round, fluffy brown owl with big kind eyes sits calmly on that branch, looking down. Dark starry sky, moonlit grass and dark bushes",
     "poses": {
      "adult": "stand",
      "child": "stand",
      "pet": "stand"
     },
     "wear": {
-     "child": "outfit3"
+     "child": "outfit3",
+     "adult": "outfit3"
     }
    },
    "9": {
     "cast": [],
     "text": "right",
     "others": false,
-    "desc": "The owl flies across the moon, wings wide",
-    "wear": {
-     "child": "outfit3"
-    }
+    "desc": "The owl flies across the moon, wings wide"
    },
    "10": {
     "cast": [
@@ -505,9 +516,9 @@ export const READERS = {
     ],
     "text": "left",
     "others": false,
-    "desc": "the child snuggled back in bed, smiling sleepily; the owl is a small shape on the moon outside",
+    "desc": "It is the middle of the NIGHT: a dark navy-blue sky, moonlight, deep blue shadows and no daylight anywhere. The same cosy child's bedroom with a warm bedside lamp glowing. A window on the left side shows a big moon with the small dark shape of an owl flying across it. A rug and a bedside table. There is NO bed in the room: leave a clear stretch of empty floor across the right half of the picture",
     "poses": {
-     "child": "sit"
+     "child": "bed"
     },
     "wear": {
      "child": "outfit3"
