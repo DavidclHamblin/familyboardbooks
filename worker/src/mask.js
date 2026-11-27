@@ -11,6 +11,7 @@ import decodeJpeg from "./vendor/jpeg-decoder.cjs";
 import { STORIES } from "./stories.js";
 import { checkPrompt, judge, KEEP_FACE } from "./swap.js";
 import { replicateReady, faceSwap, faceMatch, kontextPaint } from "./replicate.js";
+import { sheetPose } from "./sheet.js";
 
 const CHECK_ROUNDS = 3, RATIOS = { "1:1": 1, "2:3": 2 / 3, "3:2": 3 / 2, "3:4": 3 / 4, "4:3": 4 / 3, "4:5": 4 / 5, "5:4": 5 / 4, "9:16": 9 / 16, "16:9": 16 / 9 };
 const MASTER = "Repaint IMAGE 1 exactly as it is, at full quality: the same composition, characters, faces, setting, colours and painting style, and the same empty area for the words. Change nothing. No text or letters.";
@@ -26,10 +27,12 @@ export function boxPrompt(storyKey, cast) {
 }
 
 // `ref`: this person as already painted on an earlier page of the same book, so their hair and face stay the same.
-export function cropPrompt(storyKey, role, ref) {
+// `pose`: IMAGE 2 is their figure from the character sheet (sheet.js) in this page's pose, not the standing portrait.
+export function cropPrompt(storyKey, role, ref, pose) {
   const s = STORIES[storyKey], r = s.roles[role];
   return "IMAGE 1 is a close-up cut from a page of our children's picture book. It shows " + r.name + " (wearing " + wearing(r) + "). " +
-    "IMAGE 2 is a portrait of a real family member. " +
+    (pose ? "IMAGE 2 is a real family member, already painted in our book's style from their character sheet, in nearly the same pose as " + r.name + " in IMAGE 1 (" + pose + "): copy their face and hair from it closely. "
+      : "IMAGE 2 is a portrait of a real family member. ") +
     (ref ? "IMAGE 3 shows the same person as we have already painted them on another page of this book: their hair (colour, length, curls or waves) and face must look the same as in IMAGE 3, so the book is consistent. " : "") +
     "Repaint IMAGE 1 so that " + r.name + " becomes the person in IMAGE 2: take from IMAGE 2 the face shape and features, " +
     "eyes, eyebrows, nose, mouth and smile, skin tone, the hair's exact colour, length, texture and style, their age, and any glasses, beard or freckles. " +
@@ -156,10 +159,11 @@ const kontextPrompt = (storyKey, role) => {
 const cut = (env, page, rect) => out(env.IMAGES.input(stream(page)).transform({ trim: { left: rect.left, top: rect.top, width: rect.width, height: rect.height } }), "image/jpeg", 95);
 
 // `face`: their close-up (opt.face), used as an extra reference, as the face-swap source and for scoring.
-async function repaintBox(env, deps, key, role, page, rect, W, H, portrait, ref, opt, face) {
+// `pose`: { image, pose } from their character sheet, used in place of the portrait as IMAGE 2.
+async function repaintBox(env, deps, key, role, page, rect, W, H, portrait, ref, opt, face, pose) {
   const o = opt || {}, tries = Math.max(1, Math.min(4, o.tries || 1));
   const crop = await cut(env, page, rect);
-  const images = [{ bytes: crop, type: "image/jpeg" }, portrait].concat(ref ? [ref] : []);
+  const images = [{ bytes: crop, type: "image/jpeg" }, pose ? pose.image : portrait].concat(ref ? [ref] : []);
   const source = face || portrait;
   const fit = bytes => out(env.IMAGES.input(stream(bytes)).transform({ width: rect.width, height: rect.height, fit: "cover" }), "image/jpeg", 95);
   let best = null, engine = "gemini";
@@ -170,7 +174,7 @@ async function repaintBox(env, deps, key, role, page, rect, W, H, portrait, ref,
       try { drawn = { bytes: await kontextPaint(env, [{ bytes: crop }, source], kontextPrompt(key, role)), engine: "kontext" }; }
       catch (e) { notes.push("kontext failed: " + String(e.message || e).slice(0, 100)); }
     }
-    if (!drawn) drawn = await deps.drawStory(env, face ? images.concat([face]) : images, cropPrompt(key, role, !!ref) + (face ? " The last image is a close-up of the same real person's face: copy their face from it." : ""), rect.ratio, "2K");
+    if (!drawn) drawn = await deps.drawStory(env, face ? images.concat([face]) : images, cropPrompt(key, role, !!ref, pose && pose.pose) + (face ? " The last image is a close-up of the same real person's face: copy their face from it." : ""), rect.ratio, "2K");
     engine = drawn.engine; skipped.push(...(drawn.skipped || []));
     let fitted = await fit(drawn.bytes);
     // Option 2: the face and hair from their portrait, put on by a face-swap model, so they're the same on every page.
@@ -226,12 +230,14 @@ export async function paintMask(env, id, key, story, n, deps, note) {
     const rects = Object.fromEntries(cast.map(r => [r, rectFor(found[r], W, H)]));
     const example = await deps.storybookArt(env, key, "s" + n);
     let todo = cast.slice(), rounds = 0;
-    const scores = {}, rnotes = [];
+    const scores = {}, rnotes = [], poses = {};
     for (;;) {
       rounds++;
       for (const role of todo) {
         const face = opt.face ? await closeUp(env, deps, id, key, role, portraits[role]) : null;
-        const r = await repaintBox(env, deps, key, role, page, rects[role], W, H, portraits[role], refs[role], opt, face);
+        const pose = opt.sheet ? await sheetPose(env, Object.assign({}, deps, { touch }), id, key, role, n, portraits[role]) : null;
+        if (pose) poses[role] = pose.index;
+        const r = await repaintBox(env, deps, key, role, page, rects[role], W, H, portraits[role], refs[role], opt, face, pose);
         page = r.page; engines.add(r.engine); skipped.push(...r.skipped); await touch();
         if (r.score != null) scores[role] = Math.round(r.score * 1000) / 1000;
         rnotes.push(...r.notes.map(x => role + ": " + x));
@@ -245,7 +251,7 @@ export async function paintMask(env, id, key, story, n, deps, note) {
     }
     if (check.ok) for (const role of cast) if (!refs[role])
       await env.BUCKET.put("toon/" + id + "/ref-" + role + ".jpg", await cut(env, page, rects[role]), { httpMetadata: { contentType: "image/jpeg" } });
-    if (opt.swap || opt.tries > 1 || opt.face || opt.painter) check = Object.assign(check, { face: !!opt.face, painter: opt.painter || "gemini", swap: !!opt.swap, tries: opt.tries || 1, scores, replicate: rnotes.slice(0, 6) });
+    if (opt.swap || opt.tries > 1 || opt.face || opt.painter || opt.sheet) check = Object.assign(check, { sheet: opt.sheet ? poses : false, face: !!opt.face, painter: opt.painter || "gemini", swap: !!opt.swap, tries: opt.tries || 1, scores, replicate: rnotes.slice(0, 6) });
     check = Object.assign(check, { rounds, boxes: Object.fromEntries(cast.map(r => [r, rects[r]])) });
   }
   if (note) {

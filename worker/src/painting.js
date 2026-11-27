@@ -72,7 +72,7 @@ async function paintSlot(env, id, key, story, slot, deps, opts) {
     } else if (deps.checkPicture && /^(swap|mask)$/.test(((await deps.getMeta(env, id)).paint || {}).method || "")) {
       const touch = () => updateMeta(env, id, m => { const s = m.slots[slot]; if (!s || !s.pending) return false; s.pending = Date.now(); });
       const pm = (await deps.getMeta(env, id)).paint, method = pm.method;
-      const paintOpts = { swap: !!pm.swap, tries: pm.tries || 1, face: !!pm.face, painter: pm.painter || null };  // test copies only, for now (replicate.js)
+      const paintOpts = { swap: !!pm.swap, tries: pm.tries || 1, face: !!pm.face, sheet: !!pm.sheet, painter: pm.painter || null };  // test copies only, for now (replicate.js)
       const r = await (method === "mask" ? paintMask : paintSwap)(env, id, key, story, slot.slice(1), Object.assign({}, deps, { touch, paintOpts }), o.note);
       out = r.out; check = r.check;
     } else {
