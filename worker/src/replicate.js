@@ -1,13 +1,14 @@
 // Replicate (replicate.com), for two jobs the painters can't do well on their own (test copies only for now):
 //   faceSwap:  put a person's face and hair from their drawn portrait onto their character in a picture, so they
-//              look the same on every page (model REPLICATE_SWAP_MODEL, default easel/advanced-face-swap).
+//              look the same on every page (model REPLICATE_SWAP_MODEL, default codeplugtech/face-swap; the first
+//              choice, easel/advanced-face-swap, was taken off Replicate by Nov 2026).
 //   faceMatch: measure how alike two faces are, as a number, to pick the best of several tries
 //              (model REPLICATE_MATCH_MODEL, default apna-mart/face-match).
 // Needs the secret REPLICATE_API_TOKEN. Each model's input names are read from its own published schema (kept in
 // R2 for a day), so we don't depend on guessing them.
 
 const API = "https://api.replicate.com/v1/";
-const SWAP = "easel/advanced-face-swap", MATCH = "apna-mart/face-match";
+const SWAP = "codeplugtech/face-swap", MATCH = "apna-mart/face-match";
 
 export const replicateReady = env => !!env.REPLICATE_API_TOKEN;
 const swapModel = env => env.REPLICATE_SWAP_MODEL || SWAP;
@@ -49,10 +50,15 @@ export async function inputsOf(env, model) {
   return info;
 }
 
-// Run a model and wait for its output (sync mode, then polling, up to `ms`).
+// Run a model and wait for its output (sync mode, then polling, up to `ms`). Official models run by name; community
+// models (most face-swap and face-match ones) only by version, so a 404 or 422 by name tries the latest version.
 export async function run(env, model, input, ms) {
   const deadline = Date.now() + (ms || 180000);
-  const res = await fetch(API + "models/" + model + "/predictions", { method: "POST", headers: headers(env, { Prefer: "wait=60" }), body: JSON.stringify({ input }) });
+  let res = await fetch(API + "models/" + model + "/predictions", { method: "POST", headers: headers(env, { Prefer: "wait=60" }), body: JSON.stringify({ input }) });
+  if (res.status === 404 || res.status === 422) {
+    const { version } = await inputsOf(env, model);
+    if (version) res = await fetch(API + "predictions", { method: "POST", headers: headers(env, { Prefer: "wait=60" }), body: JSON.stringify({ version, input }) });
+  }
   let p = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error("Replicate " + model + ": " + res.status + " " + JSON.stringify(p).slice(0, 200));
   while (p.status === "starting" || p.status === "processing") {

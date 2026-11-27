@@ -730,7 +730,8 @@ async function handle(req, env) {
     const extra = {};
     if (body.swap) extra.swap = true;
     if (Number(body.tries) > 1) extra.tries = Math.min(4, Math.floor(Number(body.tries)));
-    if (body.face) extra.face = true;  // a close-up of each face, painted once, used as the reference
+    if (body.face) extra.face = true;
+    if (body.sheet) extra.sheet = true;  // a character sheet per person; each page uses the figure in its pose (sheet.js)  // a close-up of each face, painted once, used as the reference
     if (body.painter === "kontext") extra.painter = "kontext";  // FLUX Kontext instead of Gemini for each box
     if ((extra.swap || extra.tries || extra.painter) && !replicateReady(env)) return E(400, "Face swap, scoring and Kontext need REPLICATE_API_TOKEN.");
     const only = Array.isArray(body.only) ? body.only.map(String).filter(n => s.story.scenes[n]) : null;
@@ -760,7 +761,7 @@ async function handle(req, env) {
     await requeue(env, cid);
     // The face-swap and face-match models' input fields, so we can see what replicate.js will send (no secrets).
     let models = null;
-    if (extra.swap || extra.tries || extra.painter) try { models = { kontext: extra.painter ? await inputsOf(env, env.REPLICATE_KONTEXT_MODEL || "flux-kontext-apps/multi-image-kontext-pro") : undefined, swap: await inputsOf(env, env.REPLICATE_SWAP_MODEL || "easel/advanced-face-swap"), match: await inputsOf(env, env.REPLICATE_MATCH_MODEL || "apna-mart/face-match") }; } catch (e) { models = { error: String(e.message || e).slice(0, 200) }; }
+    if (extra.swap || extra.tries || extra.painter) try { models = { kontext: extra.painter ? await inputsOf(env, env.REPLICATE_KONTEXT_MODEL || "flux-kontext-apps/multi-image-kontext-pro") : undefined, swap: await inputsOf(env, env.REPLICATE_SWAP_MODEL || "codeplugtech/face-swap"), match: await inputsOf(env, env.REPLICATE_MATCH_MODEL || "apna-mart/face-match") }; } catch (e) { models = { error: String(e.message || e).slice(0, 200) }; }
     return J({ id: cid, token, models }, 201);
   }
 
@@ -799,6 +800,14 @@ async function handle(req, env) {
       }
     });
     return J({ ok: true, copied: copied.map(c => c.slot), ...publicStatus(fresh) });
+  }
+
+  // A test copy's character sheet (sheet.js), to look at: GET /sheets/<role>.
+  const sh = /^\/sheets\/([a-z]{2,12})$/.exec(rest);
+  if (sh && m === "GET" && meta.test) {
+    const o = await env.BUCKET.get("toon/" + id + "/sheet-" + sh[1] + ".png");
+    if (!o) return E(404, "Not found");
+    return new Response(o.body, { headers: Object.assign({ "Content-Type": "image/jpeg", "Cache-Control": "private, no-store" }, h) });
   }
 
   const sm = /^\/(photos|cartoons)\/([a-z0-9-]+)$/.exec(rest);
